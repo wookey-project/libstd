@@ -1,0 +1,537 @@
+#include "api/malloc.h"
+#include "malloc_priv.h"
+#include "malloc_light.h"
+#include "api/print.h"
+//#include "../inc/memfct.h"
+
+
+#ifdef HEAP_WITHOUT_PROTEC
+
+extern uint32_t _s_bss;
+extern uint32_t _e_bss;
+extern uint32_t _s_data;
+extern uint32_t _e_data;
+extern uint32_t _s_stack;
+extern uint32_t _e_stack;
+
+static physaddr_t _start_heap;
+static physaddr_t _end_heap;
+static uint32_t   _heap_size;
+
+
+
+
+/* Static functions prototypes */
+static int update_inter_free(struct block *b_cur, struct block *b_nxt_int, uint32_t cur_free_sz);
+static int _unlink(struct block *b_cur);
+static int _link(struct block *b_cur, struct block *b_0);
+
+
+/*********************************************************************************************/
+/*  Malloc() function                                                                        */
+/*********************************************************************************************/
+int malloc(void **ptr_to_alloc, uint32_t len)
+{
+    struct block *b_0 = (struct block *) _start_heap;
+
+    void *ptr                   = NULL;
+    uint32_t sz                 = 0;
+    uint32_t cur_free_sz        = 0;
+
+    struct block *b_cur         = b_0->nxt_free;
+#if DOUBLE_WAY_SEARCH == 1
+    struct block *b_cur_bis     = b_0->prv_free;
+#endif
+    struct block *b_nxt_now     = NULL;
+    struct block *b_nxt_int     = NULL;
+ 
+    uint8_t _b_hdr_sz_free      = sizeof(struct block);
+    uint8_t _b_hdr_sz           = sizeof(struct alloc_block);
+
+    uint8_t insered_block       = 0;
+
+#if FREE_MEMORY_CHECK >= 1
+    uint32_t memory_available   = 0;
+#endif
+
+    int32_t random = 0;
+
+    /* Errno is initialized to zero */
+    errno = 0;
+
+#if 0
+    /* We check if the pointer has not already been allocated */
+    if (*ptr_to_alloc) {
+        errno = EHEAPALREADYALLOC;
+        return -1;
+    }
+#endif
+
+#if CHECK_IF_NO_INTEGRITY >= 1
+    /* We check b_cur (and eventually b_cur_bis) are not out of range */
+# if DOUBLE_WAY_SEARCH >= 1
+    if (((physaddr_t)b_cur < _start_heap + b_0->sz) || ((physaddr_t)b_cur > _end_heap) ||
+      ((physaddr_t)b_cur_bis < _start_heap + b_0->sz) || ((physaddr_t)b_cur_bis > _end_heap)) {
+# else
+    if (((physaddr_t)b_cur < _start_heap + b_0->sz) || ((physaddr_t)b_cur > _end_heap)) {
+# endif
+        errno = EHEAPINTEGRITY;
+        return -1;
+    }
+#endif
+
+    /* We check if there is free block into heap */
+    if (!NB_FREE_AFTER_B_0()) {
+        errno = EHEAPFULL;
+        return -1;
+    }
+
+#if DOUBLE_WAY_SEARCH == 2
+    if (random & 1) {
+        b_cur = b_cur_bis;
+        b_cur_ter = b_0;
+    } else {
+        b_cur_bis = b_0;
+    }
+#endif
+
+    /* Allocated block cannot be smaller than a free bock header (think free()...) */
+    if (len < (uint32_t) (_b_hdr_sz_free - _b_hdr_sz)) {
+        len = (uint32_t) (_b_hdr_sz_free - _b_hdr_sz);
+    }
+
+    /* The asked length is aligned */
+    len = ALIGN(len);
+    sz = len + _b_hdr_sz;
+
+#if FREE_MEMORY_CHECK >= 1
+    /* We check if there is definitively not enough memory for block */
+    memory_available = (uint32_t) (_heap_size - SIZE_ALLOC() -
+                                    (uint32_t)(_b_hdr_sz_free*(NB_FREE_AFTER_B_0()-1)));
+    if (sz > memory_available) {
+        errno = EHEAPNOMEM;
+        return -1;
+    }
+#endif
+
+    while (1) {
+        /* We check if the current block is large enough for len header */
+#if DOUBLE_WAY_SEARCH != 1
+        if (b_cur->sz >= sz) {
+
+            if (b_cur == b_0) {
+                b_cur = b_0->nxt_free;
+                continue;
+            }
+#else
+        if ((b_cur->sz >= sz) || (b_cur_bis->sz >= sz)) {
+
+            if (b_cur->sz < sz) {
+                if (b_cur_bis == b_0) {
+                    b_cur_bis = b_0->prv_free;
+                    continue;
+                }
+                b_cur = b_cur_bis;
+            } else {
+                if (b_cur == b_0) {
+                    b_cur = b_0->nxt_free;
+                    continue;
+                }            
+            }
+#endif
+
+            /* Size of the current free block */
+            cur_free_sz = b_cur->sz;
+
+            /* The present next block is defined */
+            b_nxt_now = (struct block *) ((physaddr_t) b_cur + cur_free_sz);
+
+            /* Pointer to be returned by malloc() */
+            ptr  = (void *) ((struct alloc_block *) b_cur + 1);
+
+            /* If the space after the block to allocate is too small to allocate
+             * another block (it needs at least enough space for header + 1 byte) */
+            if (cur_free_sz - sz < _b_hdr_sz_free) {
+                sz = cur_free_sz;
+            }
+
+            /* Current free block is updated and changed to allocated block */
+            b_cur->sz = sz ^ MASK_ALLOC;
+
+            /* If the current block is not the last one, the next one is updated
+             * (we ensured before that there was enough space for header,
+             * else "len" was increased) */
+            if (sz - cur_free_sz >= _b_hdr_sz_free) {
+                b_nxt_int = (struct block *) ((physaddr_t) b_cur + sz);
+                update_inter_free(b_cur, b_nxt_int, cur_free_sz);
+                insered_block = 1;
+            } else {
+                if (_unlink(b_cur) < 0) {
+                    return -1;
+                }
+                DECREASE_NB_FREE();
+            }
+
+            /* If the insered free block is not the last one (ending at _end_heap),
+             * next block's "prv_sz" is completed with the current block's size */
+            if ((physaddr_t) b_nxt_now != _end_heap) {
+                b_nxt_now->prv_sz = (insered_block ? SIZE(b_nxt_int) : sz);
+            }
+
+#ifdef ZERO_ALLOCATED_BLOCK
+            _flood_char((char *) ptr, CHAR_WRITTEN, len);
+#endif
+#if FREE_MEMORY_CHECK >= 1
+            /* Increase the field "prv_free" of b_0 (total size of allocated memory) */
+            INCREASE_SZ_ALLOC(sz);
+#endif
+
+            /** < 0) {
+             * return -1;
+             *}************************************/
+            /* HERE ALLOCATED POINTER IS RETURNED */
+            /**************************************/
+            *ptr_to_alloc = ptr;
+            return 0;
+        }
+
+#if FREE_MEMORY_CHECK == 2
+            /* We check if there is definitively not enough memory for block */
+# if DOUBLE_WAY_SEARCH != 1
+            memory_available -= (uint32_t) (b_cur->sz - _b_hdr_sz_free);
+# else
+            memory_available -= (uint32_t) (b_cur->sz + b_cur_bis->sz - (uint32_t) 2 * _b_hdr_sz_free);
+# endif
+            if (sz > memory_available) {
+                errno = EHEAPNOMEM;
+                return -1;
+            }
+#endif
+        
+        /* We check the validity of b_cur->nxt_free and we go to the next free block:
+         * - following free block by default
+         * - first free block if the end is reached and conditions not fit to stop
+         */
+
+        /* Random number of turns is decreased (also used if no randomization) */
+#if DOUBLE_WAY_SEARCH == 0
+        b_cur = b_cur->nxt_free;
+        ++random;
+#elif DOUBLE_WAY_SEARCH == 1
+        b_cur = b_cur->nxt_free;
+        b_cur_bis = b_cur_bis->prv_free;
+        random += 2;
+#elif DOUBLE_WAY_SEARCH == 2
+        if (random & 1) {
+            b_cur = b_cur_ter->nxt_free;
+            b_cur_ter = b_cur;
+        } else {
+            b_cur = b_cur_bis->prv_free;
+            b_cur_bis = b_cur;
+        }
+
+        ++random;
+#endif
+
+        /* If the last free block is reached without finding convenient one, we return -1 */
+        if (random >= NB_FREE_AFTER_B_0()) {
+            errno = EHEAPNOMEM;
+            return -1;
+        }
+    }
+    
+    errno = EHEAPNODEF;
+
+    return -1;
+}
+
+/****************************************************************************************/
+
+/* Intermediate free block is updated (for malloc() function) */
+static int update_inter_free(struct block *b_cur, struct block *b_nxt_int, uint32_t cur_free_sz)
+{
+    b_nxt_int->prv_sz   = SIZE(b_cur);
+    b_nxt_int->sz       = (uint32_t) (cur_free_sz - b_nxt_int->prv_sz);
+    b_nxt_int->prv_free = b_cur->prv_free;
+    b_nxt_int->nxt_free = b_cur->nxt_free;
+
+    /* The new free block is linked instead of the newly allocated block */
+    (b_cur->prv_free)->nxt_free = b_nxt_int;
+    (b_cur->nxt_free)->prv_free = b_nxt_int;
+
+    return 0;
+}
+
+/****************************************************************************************/
+
+/* Free block to be totally occupied is unlinked */
+static int _unlink(struct block *b_cur)
+{
+    (b_cur->prv_free)->nxt_free = b_cur->nxt_free;
+    (b_cur->nxt_free)->prv_free = b_cur->prv_free;
+
+    return 0;
+}
+
+
+/****************************************************************************************/
+/****************************************************************************************/
+/****************************************************************************************/
+
+#define MERGED_WITH_PRV     0x01
+#define MERGED_WITH_NXT     0x02
+#define MERGED_WITH_BOTH    0x03
+
+
+/****************************************************************************************/
+/*  Free() function                                                                     */
+/****************************************************************************************/
+int free(void **ptr_to_free)
+{
+    struct block *b_0   = (struct block *) _start_heap;
+    struct block *b_1   = (struct block *) (_start_heap + b_0->sz);
+
+    struct block *b_cur         = NULL;
+    struct block *b_prv         = NULL;
+    struct block *b_nxt         = NULL;
+    
+    uint8_t merged              = 0;
+
+    /* Errno is initialized to zero */
+    errno = 0;
+
+    /* We check if the pointer is not null */
+    if (!(*ptr_to_free)) {
+        errno = EHEAPALREADYFREE;
+        return -1;
+    }
+
+    /* We check if the pointer is not out of range */
+    if (((struct alloc_block *) (*ptr_to_free) < (struct alloc_block *) b_1 + 1) ||
+        ((physaddr_t) (*ptr_to_free) > _end_heap)) {
+        errno = EHEAPOUTOFRANGE;
+        return -1;
+    }
+    
+    /* We get the block structure address from the pointer to be freed;
+     * at the end of the function, b_cur will correspond with the free block,
+     * in taking into account the eventual merging with previous and/or next frees blocks
+     */
+    b_cur = (struct block *) ((struct alloc_block *) (*ptr_to_free) - 1);
+    
+    /* We check if the block has not already been freed */
+    if (IS_FREE(b_cur)) {
+        errno = EHEAPNOTVALID;
+        return -1;
+    }
+
+    /* Block set to "free" */
+    MAKE_FREE(b_cur);
+
+#if FREE_MEMORY_CHECK >= 1
+    /* Decrease the field "prv_free" of b_0 (total size of allocated memory) */
+    DECREASE_SZ_ALLOC(b_cur->sz);
+#endif
+
+#ifdef ZERO_FREED_BLOCK
+    /* RAZ of the whole memory to free */
+    _flood_char((char *) (*ptr_to_free), CHAR_ZERO, b_cur->sz - HDR_SZ);
+#endif
+
+    /* Pointer to allocated block is set to 0 */
+    *ptr_to_free = NULL;
+
+    /**********************************************************************************/
+    /* If the current block is not the first one (i.e the one after b_0),
+     * we check if the previous block is free and thus can be merged
+     */
+    if (b_cur != b_1) {
+
+        b_prv = PREV(b_cur);
+
+        if (IS_FREE(b_prv)) {
+
+            merged |= MERGED_WITH_PRV;
+        
+            /* Last block updated (size increased) */
+            /*b_prv->sz += b_cur->sz;*/
+            b_prv->sz += b_cur->sz;
+            
+#ifdef ZERO_FREED_BLOCK
+            /* RAZ of the current block's header */
+            _flood_char((char *) b_cur, CHAR_ZERO, HDR_SZ);
+#endif
+            
+            /* Effective merging */
+            b_cur = b_prv;
+        }
+    }
+
+    /**********************************************************************************/
+    /* If the current block is not the final one,
+     * we check if the block after is free and thus can be merged
+     */
+    if (NOT_LAST_BLOCK(b_cur)) {
+
+        b_nxt = (struct block *) ((physaddr_t) b_cur + b_cur->sz);
+
+        if (IS_FREE(b_nxt)) {
+
+            merged |= MERGED_WITH_NXT;
+
+            /* Current block updated (size and next_block) */
+            b_cur->sz += b_nxt->sz;
+
+            /* If the current block has not been already merged with the previous one
+             * (condition only concerning previous block), we get the next free block's
+             * "prv_free" and "nxt_free" values, and we update free block around
+             */
+            if (!(merged & MERGED_WITH_PRV)) {
+                b_cur->prv_free = b_nxt->prv_free;
+                (b_cur->prv_free)->nxt_free = b_cur;
+            }
+
+            b_cur->nxt_free = b_nxt->nxt_free;
+            (b_cur->nxt_free)->prv_free = b_cur;
+            
+#ifdef ZERO_FREED_BLOCK
+            /* RAZ of tne next block's header */
+            _flood_char((char *) b_nxt, CHAR_ZERO, HDR_FREE_SZ);
+#endif
+        }
+    }
+
+    /* If the updated block is not the final one, the next block is updated (prv_sz) */
+    if (NOT_LAST_BLOCK(b_cur)) {
+        ((struct block *) ((physaddr_t) b_cur + b_cur->sz))->prv_sz = b_cur->sz;
+    }
+
+    /* If merged with the previous free block, no more operations to do */
+    if (merged & MERGED_WITH_PRV) {
+        /* The two former free blocks are merged, so number of free blocks is increased */
+        if (merged & MERGED_WITH_NXT) {
+            DECREASE_NB_FREE();
+        }
+        return 0;
+    }
+
+    /* The eventual free blocks (previous and next) are update */
+    if (!merged) {
+
+        if (_link(b_cur, b_0) < 0) {
+            return -1;
+        }
+
+        /* We increase the number of free blocks */
+        INCREASE_NB_FREE();
+    }
+
+    return 0;
+}
+
+/****************************************************************************************/
+
+static int _link(struct block *b_cur, struct block *b_0)
+{
+    struct block *b_prv = b_0;
+    struct block *b_nxt = b_0;
+
+#if CHECK_IF_NO_INTEGRITY >= 1
+    if (((physaddr_t) b_0->nxt_free > _end_heap) || (b_0->nxt_free < b_0) ||
+        ((physaddr_t) b_0->prv_free > _end_heap) || (b_0->prv_free < b_0)) {
+        errno = EHEAPINTEGRITY;
+        return -1;
+    }
+#endif
+
+    /* We look for the first free block after the new one */
+#if DOUBLE_WAY_SEARCH == 0
+    while ((b_prv->nxt_free < b_cur) && (b_prv->nxt_free != b_0)) {
+        b_prv = b_prv->nxt_free;
+    }
+    b_nxt = b_prv->nxt_free;
+#else
+    while (((b_prv->nxt_free < b_cur) && (b_prv->nxt_free != b_0)) &&
+            (b_nxt->prv_free > b_cur)) {
+        b_prv = b_prv->nxt_free;
+        b_nxt = b_nxt->prv_free;
+    }
+    
+    if (b_prv->nxt_free > b_cur) {
+        b_nxt = b_prv->nxt_free;
+    } else {
+        b_prv = b_nxt->prv_free;
+    }
+#endif
+
+    /* Current free block is updated */
+    b_cur->prv_free = b_prv;
+    b_cur->nxt_free = b_nxt;
+
+    /* Previous ant nxt free block are updated */
+    b_prv->nxt_free = b_cur;
+    b_nxt->prv_free = b_cur;
+
+    return 0;
+}
+
+
+/****************************************************************************************/
+/****************************************************************************************/
+/****************************************************************************************/
+
+/****************************************************************************************/
+/*  Initialization of heap global variables                                             */
+/****************************************************************************************/
+
+int init_malloc(void)
+{
+    struct block *b_0 = NULL;
+    struct block *b_1 = NULL;
+
+    _start_heap = (physaddr_t) (&_e_bss);
+    _heap_size  = (uint32_t) (CONFIG_RAM_SLOT_SIZE * (uint32_t)&numslots) - ((uint32_t)&_e_stack - (uint32_t)&_s_stack) - ((uint32_t)&_e_data - (uint32_t)&_s_data) - ((uint32_t)&_e_bss - (uint32_t)&_s_bss);
+    _end_heap   = (physaddr_t) (&_e_bss + _heap_size);
+
+#if 0 /* for debug purpose */
+    printf("heap start: %x\n", _start_heap);
+    printf("heap size: %x\n", _heap_size);
+    printf("num slots: %x\n", &numslots);
+    printf("data start: %x\n", &_s_data);
+    printf("data end: %x\n", &_e_data);
+    printf("bss start: %x\n", &_s_bss);
+    printf("bss end: %x\n", &_e_bss);
+    printf("stack start: %x\n", &_s_stack);
+    printf("stack end: %x\n", &_e_stack);
+#endif
+
+    /* Definition of the initial block of the heap */
+    b_0             = (struct block *) _start_heap;
+
+    /* Setting of the block structure 0 */
+    b_0->prv_sz     = 1;  /* Will be used to count free blocks */
+    b_0->sz         = (uint32_t) (HDR_FREE_SZ + B_0_LEN_BASE);
+#if FREE_MEMORY_CHECK >= 1
+    *((uint32_t *)(b_0 + 1)) = (uint32_t) b_0->sz;
+#endif
+    b_0->prv_free   = (struct block *) (_start_heap + b_0->sz);
+    b_0->nxt_free   = b_0->prv_free;
+
+    /* Definition of the first block which can be allocated */
+    b_1 = (struct block *) (_start_heap + b_0->sz);
+
+    /* Setting of the block 1 (the first one which can be allocated) */
+    b_1->prv_sz     = b_0->sz;
+    b_1->sz         = (uint32_t) (_heap_size - b_0->sz);
+    b_1->prv_free   = b_0;
+    b_1->nxt_free   = b_0;
+
+    return 0;
+}
+
+/****************************************************************************************/
+/****************************************************************************************/
+/****************************************************************************************/
+
+#endif
+

@@ -1,0 +1,104 @@
+# no specific config for libstd by now
+menu "Libstd configuration"
+
+config STD_MALLOC
+   bool "Support for libstd malloc/free"
+   default y
+
+if STD_MALLOC
+
+choice
+   prompt "Malloc type"
+   default STD_MALLOC_LIGHT
+   config STD_MALLOC_LIGHT
+   bool "lightway unsecure allocator"
+   ---help---
+      basic allocator without canaries
+   config STD_MALLOC_STD
+   bool "secure allocator"
+   ---help---
+      secure allocator with canaries
+   config STD_MALLOC_BINS # A conserver ?
+   bool "secure allocator with bins"
+   ---help---
+      secure allocator with canaries and bins
+endchoice
+
+config STD_MALLOC_SIZE_LEN
+   int "sizes and offset length (in bits)"
+   range 16 32
+   default 16
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_ALIGN
+   int "sizes alignment (in bytes)"
+   range 1 64
+   default 1
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_MUTEX
+   bool "allocator with mutex"
+   default y
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_CHECK_IF_NULL
+   int "ptr must be null for allocation"
+   range 0 1
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 0
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_DBLE_WAY_SEARCH # A conserver ?
+   int "allocator search mode optimization"
+   range 0 1
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 0
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_FREEMEM_CHECK # A conserver ?
+  int "allocator free memory checking"
+  range 0 2
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+  default 0
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_BASIC_CHECKS
+   int "allocator basic integrity check"
+   range 0 2
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 0
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_NB_CANARIES
+   int
+   depends on STD_MALLOC_BINS
+   default 2
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_INTEGRITY
+   int "allocator self integrity check"
+   range 0 3
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 1
+   ---help---
+      TODO: Christophe
+
+config STD_MALLOC_RANDOM
+   int "random allocation"
+   range 0 1
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 0
+   ---help---
+      TODO: Christophe
+
+endif
+
+endmenu
