@@ -5,6 +5,9 @@
 
 #include "api/types.h"
 
+/*
+ * generic synchronization specific binary IPC API
+ */
 enum sync_magic {
     /** task state request command and response */
     MAGIC_TASK_STATE_CMD     = 0x42,
@@ -35,5 +38,24 @@ struct sync_command {
     uint8_t data_size;
     uint8_t data[32];
 } __PACKED;
+
+/*
+ * Dataplane specific IPC commands
+ * This define the SCSI based communication protocol for requiring read/write
+ * commands between tasks
+ */
+
+enum dataplane_magic {
+  DATA_WR_DMA_REQ = 0x01,
+  DATA_WR_DMA_ACK = 0x02,
+  DATA_RD_DMA_REQ = 0x03,
+  DATA_RD_DMA_ACK = 0x04,
+};
+
+struct dataplane_command {
+    uint8_t  magic;
+    uint32_t sector_address;
+    uint32_t num_sectors;
+};
 
 #endif /*! IPC_H_*/
