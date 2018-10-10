@@ -63,7 +63,9 @@ e_syscall_ret do_syscall(__attribute__((unused)) struct gen_syscall_args *args)
   asm volatile (
         "svc #0\n"
         "str  r0, %[ret]\n"
-        : [ret] "=m"(ret));
+        : [ret] "=m"(ret)
+        :
+        : "r0");
   return ret;
 }
 
