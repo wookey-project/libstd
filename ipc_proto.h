@@ -21,6 +21,9 @@ enum sync_magic {
     /** DMA 'buffer ready' command and response */
     MAGIC_DMA_BUF_READY_CMD  = 0x72,
     MAGIC_DMA_BUF_READY_RESP = 0x73,
+    /** USB vs storage synchronization control plane */
+    MAGIC_STORAGE_SCSI_BLOCK_SIZE = 0x82,
+    MAGIC_STORAGE_SCSI_BLOCK_NUM  = 0x83
 };
 
 enum sync_init_state {
@@ -29,7 +32,8 @@ enum sync_init_state {
     SYNC_WAIT         = 2,
     SYNC_DONE         = 3,
     SYNC_ACKNOWLEDGE  = 4,
-    SYNC_UNKNOWN      = 5
+    SYNC_UNKNOWN      = 5,
+    SYNC_FAILURE      = 6
 };
 
 struct sync_command {
