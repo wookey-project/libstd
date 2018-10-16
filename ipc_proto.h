@@ -22,8 +22,12 @@ enum sync_magic {
     MAGIC_DMA_BUF_READY_CMD  = 0x72,
     MAGIC_DMA_BUF_READY_RESP = 0x73,
     /** USB vs storage synchronization control plane */
-    MAGIC_STORAGE_SCSI_BLOCK_SIZE = 0x82,
-    MAGIC_STORAGE_SCSI_BLOCK_NUM  = 0x83
+    MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD = 0x82,
+    MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
+    MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD  = 0x84,
+    MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP  = 0x85,
+    /** finishing with invalid */
+    MAGIC_INVALID            = 0xff,
 };
 
 enum sync_init_state {
@@ -54,6 +58,8 @@ enum dataplane_magic {
   DATA_WR_DMA_ACK = 0x02,
   DATA_RD_DMA_REQ = 0x03,
   DATA_RD_DMA_ACK = 0x04,
+  /** finishing with invalid */
+  DATA_INVALID    = 0xff,
 };
 
 struct dataplane_command {
@@ -61,5 +67,11 @@ struct dataplane_command {
     uint32_t sector_address;
     uint32_t num_sectors;
 };
+
+typedef union {
+    struct  dataplane_command dataplane_cmd;
+    struct  sync_command      sync_cmd;
+    uint8_t                   magic; // first field of the two above
+} t_ipc_command;
 
 #endif /*! IPC_H_*/
