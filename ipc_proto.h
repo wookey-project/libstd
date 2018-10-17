@@ -40,12 +40,23 @@ enum sync_init_state {
     SYNC_FAILURE      = 6
 };
 
+union data_block {
+    uint8_t u8[32];
+    uint32_t u32[8];
+    uint16_t u16[16];
+};
+
 struct sync_command {
     uint8_t magic;
     uint8_t state;
-    uint8_t data_size;
-    uint8_t data[32];
-} __PACKED;
+} __attribute__((packed));
+
+struct sync_command_data {
+    uint8_t          magic;
+    uint8_t          state;
+    uint8_t          data_size;
+    union data_block data;
+} __attribute__((packed));
 
 /*
  * Dataplane specific IPC commands
@@ -71,6 +82,7 @@ struct dataplane_command {
 typedef union {
     struct  dataplane_command dataplane_cmd;
     struct  sync_command      sync_cmd;
+    struct  sync_command_data sync_cmd_data;
     uint8_t                   magic; // first field of the two above
 } t_ipc_command;
 
