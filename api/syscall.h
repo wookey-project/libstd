@@ -52,6 +52,7 @@ e_syscall_ret sys_init_INIT_DONE(uint32_t inittype);
 
 e_syscall_ret sys_cfg_CFG_GPIO_SET(uint32_t cfgtype, uint8_t gpioref, uint8_t value);
 e_syscall_ret sys_cfg_CFG_GPIO_GET(uint32_t cfgtype, uint8_t gpioref, uint8_t *value);
+e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI(uint32_t cfgtype, uint8_t gpioref);
 #ifdef CONFIG_KERNEL_DMA_ENABLE
 e_syscall_ret sys_cfg_CFG_DMA_RECONF(uint32_t cfgtype, dma_t*dma, dma_reconf_mask_t mask, int descriptor);
 e_syscall_ret sys_cfg_CFG_DMA_RELOAD(uint32_t cfgtype, int descriptor);

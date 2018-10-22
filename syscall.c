@@ -146,6 +146,7 @@ e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_
  *
  *   prototype: sys_cfg(CFG_GPIO_SET, uint8_t gpioref, uint8_t value);
  *   prototype: sys_cfg(CFG_GPIO_GET, uint8_t gpioref, uint8_t *val);
+ *   prototype: sys_cfg(CFG_GPIO_UNLOCK_EXTI, uint8_t gpioref);
  *   prototype: sys_cfg(CFG_DMA_RECONF, dma_t*dma, dma_reconf_mask_t reconfmask, int descriptor);
  *   prototype: sys_cfg(CFG_DMA_RELOAD, int descriptor);
  *   prototype: sys_cfg(CFG_DMA_DISABLE, int descriptor);
@@ -174,6 +175,18 @@ e_syscall_ret sys_cfg_CFG_GPIO_GET(uint32_t cfgtype, uint8_t gpioref, uint8_t *v
 
     return ret;
 }
+
+e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI(uint32_t cfgtype, uint8_t gpioref)
+{
+    struct gen_syscall_args args =
+        { SYS_CFG, cfgtype, gpioref, 0, 0 };
+    e_syscall_ret ret;
+
+    ret = do_syscall(&args);
+
+    return ret;
+}
+
 
 #ifdef CONFIG_KERNEL_DMA_ENABLE
 e_syscall_ret sys_cfg_CFG_DMA_RECONF(uint32_t cfgtype, dma_t*dma, dma_reconf_mask_t mask, int descriptor)
