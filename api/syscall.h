@@ -256,6 +256,12 @@ e_syscall_ret sys_lock(uint32_t action);
 e_syscall_ret sys_get_systick(uint64_t * val,  e_tick_type type);
 
 /**
+ * \brief return random content of len size
+ * On Ada kernel, len must not be greater than 16 bytes.
+ */
+e_syscall_ret sys_get_random(char * val, uint16_t len);
+
+/**
 ** \brief task initialization function, to declare devices and finalize init step.
 **
 ** ### Synopsis

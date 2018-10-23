@@ -64,6 +64,17 @@ e_syscall_ret sys_get_systick(uint64_t * val, e_tick_type type)
     return ret;
 }
 
+e_syscall_ret sys_get_random(char * val, uint16_t len)
+{
+    struct gen_syscall_args args = { SYS_GET_RANDOM, (uint32_t) val, (uint32_t)len, 0, 0 };
+    e_syscall_ret ret;
+
+    ret = do_syscall(&args);
+
+    return ret;
+}
+
+
 /*************************************************
  * sys_ipc functions
  ************************************************/
