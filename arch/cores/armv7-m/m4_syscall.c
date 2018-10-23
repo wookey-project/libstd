@@ -1,6 +1,9 @@
 #include "api/syscall.h"
 #include "print_priv.h"
 
+/* Global variable holding the stack canary value */
+volatile uint32_t __stack_chk_guard = 0;
+
 /**
 ** \private
 */
@@ -20,10 +23,13 @@ int _main(uint32_t slot);
 ** this function MUST be the first of this file, to allow the linker to place it at the begining
 ** of the slot
 */
-void do_starttask(uint32_t slot)
+__attribute__((optimize("-fno-stack-protector","-O0"))) void do_starttask(uint32_t slot, uint32_t seed)
 {
     // init printf buffer
+    __stack_chk_guard = seed;
     init_ring_buffer();
+    printf("seed is %x\n", seed);
+    /* initialize the stack protector for all other task's functions */
     _main(slot);
 
     /* End of task */
@@ -32,6 +38,20 @@ void do_starttask(uint32_t slot)
     /* give some time to SVC IRQ to rise */
     while(1);
 }
+
+/*
+ * This function handles stack check error, corresponding to canary corruption detection
+ */
+void __stack_chk_fail(void)
+{
+	/* We have failed to check our stack canary */
+	printf("Failed to check the stack guard ! Stack corruption !");
+    while (1);
+
+	return;
+}
+
+
 
 /**
 ** \private
