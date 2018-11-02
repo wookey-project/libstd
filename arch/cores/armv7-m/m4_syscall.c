@@ -28,7 +28,6 @@ __attribute__((optimize("-fno-stack-protector","-O0"))) void do_starttask(uint32
     // init printf buffer
     __stack_chk_guard = seed;
     init_ring_buffer();
-    printf("seed is %x\n", seed);
     /* initialize the stack protector for all other task's functions */
     _main(slot);
 
@@ -46,10 +45,14 @@ void __stack_chk_fail(void)
 {
 	/* We have failed to check our stack canary */
 	printf("Failed to check the stack guard ! Stack corruption !");
-	/* [RB] FIXME: we should do something more appropriate here since
+	/* INFO: we should do something more appropriate here since
 	 * a stack check fail event is a serious security issue ...
+     *
+     * SVC 1 is a task exit request, the task is no more executed from now on.
 	 */
-        while (1){};
+    asm volatile ( "svc #1\n" :::);
+
+    while (1){};
 
 	return;
 }
