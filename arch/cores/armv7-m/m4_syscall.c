@@ -46,7 +46,10 @@ void __stack_chk_fail(void)
 {
 	/* We have failed to check our stack canary */
 	printf("Failed to check the stack guard ! Stack corruption !");
-    while (1);
+	/* [RB] FIXME: we should do something more appropriate here since
+	 * a stack check fail event is a serious security issue ...
+	 */
+        while (1){};
 
 	return;
 }
@@ -68,7 +71,7 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
     asm volatile ( "svc #2\n" :::); 
 
     /* give some time to SVC IRQ to rise */
-    while(1);
+    while(1){};
 }
 
 /**
