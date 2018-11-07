@@ -18,6 +18,8 @@ enum sync_magic {
     /** cryptography interaction command and response */
     MAGIC_CRYPTO_PIN_CMD     = 0x62,
     MAGIC_CRYPTO_PIN_RESP    = 0x63,
+    MAGIC_CRYPTO_PETPIN_CMD  = 0x64,
+    MAGIC_CRYPTO_PETPIN_RESP = 0x65,
     /** DMA 'buffer ready' command and response */
     MAGIC_DMA_BUF_READY_CMD  = 0x72,
     MAGIC_DMA_BUF_READY_RESP = 0x73,
