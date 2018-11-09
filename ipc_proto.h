@@ -20,9 +20,15 @@ enum sync_magic {
     MAGIC_CRYPTO_PIN_RESP    = 0x63,
     MAGIC_CRYPTO_PETPIN_CMD  = 0x64,
     MAGIC_CRYPTO_PETPIN_RESP = 0x65,
+    /** Full authentication phase request */
+    MAGIC_CRYPTO_AUTH_CMD    = 0x66,
     /** DMA 'buffer ready' command and response */
     MAGIC_DMA_BUF_READY_CMD  = 0x72,
     MAGIC_DMA_BUF_READY_RESP = 0x73,
+    /** settigs magics */
+    MAGIC_SETTINGS_SET_USERPIN = 0x90,
+    MAGIC_SETTINGS_SET_PETPIN  = 0x91,
+    MAGIC_SETTINGS_SET_PETNAME = 0x92,
     /** USB vs storage synchronization control plane */
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD = 0x82,
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
