@@ -29,6 +29,7 @@ enum sync_magic {
     MAGIC_SETTINGS_SET_USERPIN = 0x90,
     MAGIC_SETTINGS_SET_PETPIN  = 0x91,
     MAGIC_SETTINGS_SET_PETNAME = 0x92,
+    MAGIC_SETTINGS_LOCK        = 0x99,
     /** USB vs storage synchronization control plane */
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD = 0x82,
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
