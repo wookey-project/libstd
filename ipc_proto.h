@@ -18,18 +18,14 @@ enum sync_magic {
     /** cryptography interaction command and response */
     MAGIC_CRYPTO_PIN_CMD     = 0x62,
     MAGIC_CRYPTO_PIN_RESP    = 0x63,
-    MAGIC_CRYPTO_PETPIN_CMD  = 0x64,
-    MAGIC_CRYPTO_PETPIN_RESP = 0x65,
     /** Full authentication phase request */
-    MAGIC_CRYPTO_AUTH_CMD    = 0x66,
+    MAGIC_CRYPTO_AUTH_CMD    = 0x68,
     /** DMA 'buffer ready' command and response */
     MAGIC_DMA_BUF_READY_CMD  = 0x72,
     MAGIC_DMA_BUF_READY_RESP = 0x73,
     /** settigs magics */
-    MAGIC_SETTINGS_SET_USERPIN = 0x90,
-    MAGIC_SETTINGS_SET_PETPIN  = 0x91,
-    MAGIC_SETTINGS_SET_PETNAME = 0x92,
-    MAGIC_SETTINGS_LOCK        = 0x99,
+    MAGIC_SETTINGS_CMD       = 0x90,
+    MAGIC_SETTINGS_LOCK      = 0x91,
     /** USB vs storage synchronization control plane */
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD = 0x82,
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
@@ -50,11 +46,34 @@ enum sync_init_state {
     SYNC_FAILURE      = 6
 };
 
+/* Smart vs Pin structure, mapped in data.u8 */
+enum sc_field_type {
+    SC_USER_PIN = 1,
+    SC_PET_PIN  = 2,
+    SC_PET_NAME = 3
+};
+
+enum sc_field_request {
+    SC_REQ_AUTHENTICATE = 1,
+    SC_REQ_MODIFY       = 2
+};
+
+typedef struct {
+    enum sc_field_type sc_type;
+    enum sc_field_request sc_req;
+    char sc_petname[24];
+} t_sc_request;
+
+/**/
 union data_block {
     uint8_t u8[32];
     uint32_t u32[8];
     uint16_t u16[16];
+    t_sc_request req;
 };
+
+
+
 
 struct sync_command {
     uint8_t magic;
@@ -95,5 +114,6 @@ typedef union {
     struct  sync_command_data sync_cmd_data;
     uint8_t                   magic; // first field of the two above
 } t_ipc_command;
+
 
 #endif /*! IPC_H_*/
