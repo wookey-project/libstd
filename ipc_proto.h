@@ -35,6 +35,7 @@ enum sync_magic {
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
     MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD  = 0x84,
     MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP  = 0x85,
+    MAGIC_STORAGE_EJECTED = 0x86,
     /** finishing with invalid */
     MAGIC_INVALID            = 0xff,
 };
