@@ -8,32 +8,74 @@
 /*
  * generic synchronization specific binary IPC API
  */
+
+/*
+ *  ipc_command:
+ *
+ *  |----|----|
+ *  |MGC |STA |
+ *  |----|----|
+ *
+ *  ipc_command_data:
+ *
+ *  |----|----|----|----|
+ *  |MGC |STA |   SIZE  |
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *  |DATA|DATA|DATA|DATA|
+ *  |----|----|----|----|
+ *
+ * data is a union between:
+ * 32 uint8_t,
+ * 16 uint16_t,
+ * 8 uint32_t,
+ * t_sc_request structure
+ *
+ */
+
+
 enum sync_magic {
+    /* Dataplane read & write requests */
+    MAGIC_DATA_WR_DMA_REQ              = 0x01,
+    MAGIC_DATA_WR_DMA_ACK              = 0x02,
+    MAGIC_DATA_RD_DMA_REQ              = 0x03,
+    MAGIC_DATA_RD_DMA_ACK              = 0x04,
     /** task state request command and response */
-    MAGIC_TASK_STATE_CMD     = 0x42,
-    MAGIC_TASK_STATE_RESP    = 0x43,
+    MAGIC_TASK_STATE_CMD               = 0x42,
+    MAGIC_TASK_STATE_RESP              = 0x43,
     /** cryptography interaction command and response */
-    MAGIC_CRYPTO_INJECT_CMD  = 0x52,
-    MAGIC_CRYPTO_INJECT_RESP = 0x53,
-    /** cryptography interaction command and response */
-    MAGIC_CRYPTO_PIN_CMD     = 0x62,
-    MAGIC_CRYPTO_PIN_RESP    = 0x63,
-    /** Full authentication phase request */
-    MAGIC_CRYPTO_AUTH_CMD    = 0x68,
+    MAGIC_CRYPTO_INJECT_CMD            = 0x52,
+    MAGIC_CRYPTO_INJECT_RESP           = 0x53,
+    /** pin and pet name interaction command and response */
+    MAGIC_CRYPTO_PIN_CMD               = 0x62,
+    MAGIC_CRYPTO_PIN_RESP              = 0x63,
     /** DMA 'buffer ready' command and response */
-    MAGIC_DMA_BUF_READY_CMD  = 0x72,
-    MAGIC_DMA_BUF_READY_RESP = 0x73,
-    /** settigs magics */
-    MAGIC_SETTINGS_CMD       = 0x90,
-    MAGIC_SETTINGS_LOCK      = 0x91,
+    MAGIC_DMA_BUF_READY_CMD            = 0x72,
+    MAGIC_DMA_BUF_READY_RESP           = 0x73,
     /** USB vs storage synchronization control plane */
-    MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD = 0x82,
+    MAGIC_STORAGE_SCSI_BLOCK_SIZE_CMD  = 0x82,
     MAGIC_STORAGE_SCSI_BLOCK_SIZE_RESP = 0x83,
-    MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD  = 0x84,
+    MAGIC_STORAGE_SCSI_BLOCK_NUM_CMD   = 0x84,
     MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP  = 0x85,
-    MAGIC_STORAGE_EJECTED = 0x86,
+    MAGIC_STORAGE_EJECTED              = 0x86,
+    /** user menu settigs requests magics */
+    MAGIC_SETTINGS_CMD                 = 0x90,
+    MAGIC_SETTINGS_LOCK                = 0x91,
     /** finishing with invalid */
-    MAGIC_INVALID            = 0xff,
+    MAGIC_INVALID                      = 0xff,
 };
 
 enum sync_init_state {
@@ -58,7 +100,7 @@ enum sc_field_request {
     SC_REQ_MODIFY       = 2
 };
 
-typedef struct {
+typedef struct  __attribute__((packed)) {
     enum sc_field_type sc_type;
     enum sc_field_request sc_req;
     char sc_petname[24];
@@ -83,7 +125,7 @@ struct sync_command {
 struct sync_command_data {
     uint8_t          magic;
     uint8_t          state;
-    uint8_t          data_size;
+    uint16_t          data_size;
     union data_block data;
 } __attribute__((packed));
 
@@ -92,15 +134,6 @@ struct sync_command_data {
  * This define the SCSI based communication protocol for requiring read/write
  * commands between tasks
  */
-
-enum dataplane_magic {
-  DATA_WR_DMA_REQ = 0x01,
-  DATA_WR_DMA_ACK = 0x02,
-  DATA_RD_DMA_REQ = 0x03,
-  DATA_RD_DMA_ACK = 0x04,
-  /** finishing with invalid */
-  DATA_INVALID    = 0xff,
-};
 
 struct dataplane_command {
     uint8_t  magic;
