@@ -26,7 +26,20 @@ static int _update_inter_free(struct block *b_cur, struct block *b_nxt_int, u__s
 static int _unlink(struct block *b_cur);
 static int _link(struct block *b_cur, struct block *b_0);
 
-static void __attribute__((optimize("O0"))) *_safe_flood_char(void *dest, const char c, uint32_t n);
+#if __GNUG__
+# pragma GCC push_options
+# pragma GCC optimize("O0")
+#endif
+#if __clang__
+# pragma clang optimize off
+#endif
+static void *_safe_flood_char(void *dest, const char c, uint32_t n);
+#if __clang__
+# pragma clang optimize on
+#endif
+#if __GNUG__
+# pragma GCC pop_options
+#endif
 
 
 /*
@@ -459,9 +472,14 @@ static int _link(struct block *b_cur, struct block *b_0)
 /****************************************************************************************/
 /****************************************************************************************/
 
-//#pragma GCC push_options
-//#pragma GCC optimize("O0")
-static void __attribute__((optimize("O0"))) *_safe_flood_char(void *dest, const char c, uint32_t n)
+#if __GNUG__
+# pragma GCC push_options
+# pragma GCC optimize("O0")
+#endif
+#if __clang__
+# pragma clang optimize off
+#endif
+static void *_safe_flood_char(void *dest, const char c, uint32_t n)
 {
     char *byte = (char*) dest;
 
@@ -473,7 +491,12 @@ static void __attribute__((optimize("O0"))) *_safe_flood_char(void *dest, const 
 
     return dest;
 }
-//#pragma GCC pop_options
+#if __GNUG__
+# pragma GCC pop_options
+#endif
+#if __clang__
+# pragma clang optimize on
+#endif
 
 
 /****************************************************************************************/

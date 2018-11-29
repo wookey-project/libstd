@@ -23,7 +23,19 @@ int _main(uint32_t slot);
 ** this function MUST be the first of this file, to allow the linker to place it at the begining
 ** of the slot
 */
-__attribute__((optimize("-fno-stack-protector","-O0"))) void do_starttask(uint32_t slot, uint32_t seed)
+#if __GNUG__
+# pragma GCC push_options
+# pragma GCC optimize("O0")
+# pragma GCC optimize("-fno-stack-protector")
+#endif
+#if __clang__
+# pragma clang optimize off
+  /* Well, clang support local stack protection deactivation only since v8 :-/ */
+# if __clang_major__ > 7
+#  pragma clang attribute push(__attribute__((no_stack_protector)), apply_to = do_starttask)
+# endif
+#endif
+void do_starttask(uint32_t slot, uint32_t seed)
 {
     // init printf buffer
     __stack_chk_guard = seed;
@@ -32,11 +44,21 @@ __attribute__((optimize("-fno-stack-protector","-O0"))) void do_starttask(uint32
     _main(slot);
 
     /* End of task */
-    asm volatile ( "svc #1\n" :::);
+    asm ( "svc #1\n" :::);
 
     /* give some time to SVC IRQ to rise */
     while(1);
 }
+#if __clang__
+# pragma clang optimize on
+# if __clang_major__ > 7
+#  pragma clang attribute pop
+# endif
+#endif
+#if __GNUG__
+# pragma GCC pop_options
+#endif
+
 
 /*
  * This function handles stack check error, corresponding to canary corruption detection

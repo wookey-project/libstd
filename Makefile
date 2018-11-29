@@ -43,6 +43,8 @@ SRC += $(wildcard $(SRC_DIR)/embed/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.c)
 OBJ = $(patsubst %.c,$(APP_BUILD_DIR)/%.o,$(SRC))
 DEP = $(OBJ:.o=.d)
+ASM_SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.s)
+ASM_OBJ = $(patsubst %.s,$(APP_BUILD_DIR)/%.o,$(ASM_SRC))
 
 OUT_DIRS = $(dir $(OBJ)) $(dir $(ARCH_OBJ))
 
@@ -80,12 +82,15 @@ lib: $(APP_BUILD_DIR)/$(LIB_FULL_NAME)
 $(APP_BUILD_DIR)/%.o: %.c
 	$(call if_changed,cc_o_c)
 
+$(APP_BUILD_DIR)/%.o: %.s
+	$(call if_changed,cc_o_c)
+
 # arch C sources files
 $(APP_BUILD_DIR)/%.o: $(ARCH_DIR)/%.c
 	$(call if_changed,cc_o_c)
 
 # lib
-$(APP_BUILD_DIR)/$(LIB_FULL_NAME): $(OBJ) $(ARCH_OBJ)
+$(APP_BUILD_DIR)/$(LIB_FULL_NAME): $(OBJ) $(ASM_OBJ) $(ARCH_OBJ)
 	$(call if_changed,mklib)
 	$(call if_changed,ranlib)
 
