@@ -6,12 +6,11 @@
 #include "kernel/exported/syscalls.h"
 
 #define PUT_CHAR(c)					\
-	ring_buffer.buf[ring_buffer.end++] = c;		\
-	ring_buffer.end %= BUF_MAX;			\
-	if (ring_buffer.end == ring_buffer.start) {	\
-		ring_buffer.start++;			\
-		ring_buffer.start %= BUF_MAX;		\
-	}
+	ring_buffer.buf[ring_buffer.end] = c;		\
+    if (((ring_buffer.end + 1) % BUF_MAX) != ring_buffer.start) {\
+        ring_buffer.end++; \
+        ring_buffer.end %= BUF_MAX; \
+    }
 
 static const char *strerror_tab[4] = {
     "Done", //"Done: Syscall finished successfully",
