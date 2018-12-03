@@ -38,10 +38,11 @@ const char *strerror(uint8_t ret)
 static void print_and_reset_buffer(void)
 {
     int i;
+
     if (ring_buffer.end > ring_buffer.start) {
         sys_ipc(IPC_LOG, ring_buffer.end - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
-    } else if (ring_buffer.end <= ring_buffer.start) {
+    } else if (ring_buffer.end < ring_buffer.start) {
         sys_ipc(IPC_LOG, BUF_SIZE - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
         sys_ipc(IPC_LOG, ring_buffer.end, &(ring_buffer.buf[0]));
@@ -163,10 +164,29 @@ void print(char *fmt, va_list args)
     }
 }
 
+/* asyncrhonous printf, for handlers */
+void aprintf(char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    print(fmt, args);
+    va_end(args);
+}
+
+void aprintf_flush(void)
+{
+    print_and_reset_buffer();
+}
+
 void printf(char *fmt, ...)
 {
     va_list args;
 
+    /*
+     * if there is some asyncrhonous printf to pass to the kernel, do it
+     * before execute the current printf command
+     */
+    print_and_reset_buffer();
     va_start(args, fmt);
     print(fmt, args);
     va_end(args);

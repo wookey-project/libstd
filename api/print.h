@@ -8,6 +8,10 @@ void *memcpy(void *dest, const void *src, uint32_t n);
 
 void printf(char *fmt, ...);
 
+void aprintf(char *fmt, ...);
+
+void aprintf_flush(void);
+
 uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...);
 
 uint32_t strlen(const char *s);
