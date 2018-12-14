@@ -60,6 +60,7 @@ e_syscall_ret sys_cfg_CFG_DMA_DISABLE(uint32_t cfgtype, int descriptor);
 #endif
 e_syscall_ret sys_cfg_CFG_DEV_MAP(uint32_t cfgtype, uint32_t devid);
 e_syscall_ret sys_cfg_CFG_DEV_UNMAP(uint32_t cfgtype, uint32_t devid);
+e_syscall_ret sys_cfg_CFG_DEV_RELEASE(uint32_t cfgtype, uint32_t devid);
 
 
 e_syscall_ret sys_ipc_IPC_LOG(uint32_t ipctype, logsize_t size, const char *msg);

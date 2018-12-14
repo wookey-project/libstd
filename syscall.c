@@ -257,6 +257,17 @@ e_syscall_ret sys_cfg_CFG_DEV_UNMAP(uint32_t cfgtype, uint32_t devid)
 }
 
 
+e_syscall_ret sys_cfg_CFG_DEV_RELEASE(uint32_t cfgtype, uint32_t devid)
+{
+    struct gen_syscall_args args =
+        { SYS_CFG, cfgtype, devid, 0, 0 };
+    e_syscall_ret ret;
+
+    ret = do_syscall(&args);
+
+    return ret;
+}
+
 
 
 /*************************************************
