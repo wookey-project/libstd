@@ -22,4 +22,8 @@ typedef enum {false = 0, true = 1} bool;
 # define __packed		__attribute__((__packed__))
 #endif
 
+#define __in            /* indication for function arguments (Ada like) */
+#define __out           /* indication for function arguments (Ada like) */
+#define __inout         /* indication for function arguments (Ada like) */
+
 #endif/*!TYPES_H_*/
