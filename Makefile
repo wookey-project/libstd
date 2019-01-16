@@ -12,6 +12,7 @@ VERSION = 1
 # use an app-specific build dir
 APP_BUILD_DIR = $(BUILD_DIR)/libs/$(LIB_NAME)
 
+CFLAGS += $(LIBS_CFLAGS)
 CFLAGS += -ffreestanding
 CFLAGS += -I$(PROJ_FILES)/kernel/shared
 CFLAGS += -I$(PROJ_FILES)/include/generated -I. -Iarch/cores/$(CONFIG_ARCH) -I$(PROJ_FILES)
