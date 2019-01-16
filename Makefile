@@ -14,6 +14,11 @@ APP_BUILD_DIR = $(BUILD_DIR)/libs/$(LIB_NAME)
 
 CFLAGS += $(LIBS_CFLAGS)
 CFLAGS += -ffreestanding
+# this lib is special: some of its functions are called by the kernel and as such must NOT be
+# purged at strip time by the compiler.
+# This flag block any attempt to delete unused symbols from the object file as they may be
+# called from the kernel
+CFLAGS += -fno-function-sections
 CFLAGS += -I$(PROJ_FILES)/kernel/shared
 CFLAGS += -I$(PROJ_FILES)/include/generated -I. -Iarch/cores/$(CONFIG_ARCH) -I$(PROJ_FILES)
 CFLAGS += -MMD -MP
