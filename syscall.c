@@ -75,30 +75,26 @@ e_syscall_ret sys_get_random(char * val, uint16_t len)
 }
 
 
-/*************************************************
- * sys_ipc functions
- ************************************************/
-
-/*
- *   prototype: sys_ipc(IPC_LOG, logsize_t size, const char *msg);
- *   prototype: sys_ipc(IPC_SEND_SYNC, uint8_t receiver, logsize_t size, const char *msg);
- *   prototype: sys_ipc(IPC_RECV_SYNC, uint8_t *sender, logsize_t* size, char* msg);
- *   prototype: sys_ipc(IPC_SEND_ASYNC, uint8_t receiver, logsize_t size, const char *msg);
- *   prototype: sys_ipc(IPC_RECV_ASYNC, uint8_t *sender, logsize_t* size, char* msg);
- */
-
-e_syscall_ret sys_ipc_IPC_LOG(uint32_t ipctype, logsize_t size, const char *msg)
+e_syscall_ret sys_log(logsize_t size, const char *msg)
 {
-    uint32_t lsize = size;
-    /* default target is kernel (target 0), this does not require a user specification */
-    struct gen_syscall_args args =
-        { SYS_IPC, ipctype, 0, lsize, (uint32_t)msg };
+    struct gen_syscall_args args = { SYS_LOG, (uint32_t)size, (uint32_t)msg, 0, 0 };
     e_syscall_ret ret;
 
     ret = do_syscall(&args);
 
     return ret;
 }
+
+/*************************************************
+ * sys_ipc functions
+ ************************************************/
+
+/*
+ *   prototype: sys_ipc(IPC_SEND_SYNC, uint8_t receiver, logsize_t size, const char *msg);
+ *   prototype: sys_ipc(IPC_RECV_SYNC, uint8_t *sender, logsize_t* size, char* msg);
+ *   prototype: sys_ipc(IPC_SEND_ASYNC, uint8_t receiver, logsize_t size, const char *msg);
+ *   prototype: sys_ipc(IPC_RECV_ASYNC, uint8_t *sender, logsize_t* size, char* msg);
+ */
 
 e_syscall_ret sys_ipc_IPC_SEND_SYNC(uint32_t ipctype, uint8_t receiver, logsize_t size, const char *msg)
 {

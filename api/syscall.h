@@ -62,12 +62,13 @@ e_syscall_ret sys_cfg_CFG_DEV_MAP(uint32_t cfgtype, uint32_t devid);
 e_syscall_ret sys_cfg_CFG_DEV_UNMAP(uint32_t cfgtype, uint32_t devid);
 e_syscall_ret sys_cfg_CFG_DEV_RELEASE(uint32_t cfgtype, uint32_t devid);
 
-
-e_syscall_ret sys_ipc_IPC_LOG(uint32_t ipctype, logsize_t size, const char *msg);
 e_syscall_ret sys_ipc_IPC_SEND_SYNC(uint32_t ipctype, uint8_t receiver, logsize_t size, const char *msg);
 e_syscall_ret sys_ipc_IPC_RECV_SYNC(uint32_t ipctype, uint8_t *sender, logsize_t *size, char *msg);
 e_syscall_ret sys_ipc_IPC_SEND_ASYNC(uint32_t ipctype, uint8_t receiver, logsize_t size, const char *msg);
 e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_t *size, char *msg);
+
+e_syscall_ret sys_log (logsize_t size, const char *msg);
+
 /**
  * \}
  */
@@ -103,17 +104,6 @@ e_syscall_ret sys_lock(uint32_t action);
 ** \brief The global inter-process communication system
 **
 ** There is two distinguished target for the IPC:
-**
-** ### the kernel (target_task = 0)
-**   the ipctype can be one of:
-**   - IPC_LOG
-**
-**     prototype: sys_ipc(0, IPC_LOG, size, msg);
-**
-**     Send a message to the logging device (typically an UART).
-**     Return SYS_E_DONE if the message size is less than 256, SYS_E_INVAL otherwise
-**
-**     \include examples/syscalls/ipc_log.c
 **
 ** ### a userspace task (target_task = target slot)
 **   the ipctype can be one of:

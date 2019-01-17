@@ -40,12 +40,12 @@ static void print_and_reset_buffer(void)
     int i;
 
     if (ring_buffer.end > ring_buffer.start) {
-        sys_ipc(IPC_LOG, ring_buffer.end - ring_buffer.start,
+        sys_log(ring_buffer.end - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
     } else if (ring_buffer.end < ring_buffer.start) {
-        sys_ipc(IPC_LOG, BUF_SIZE - ring_buffer.start,
+        sys_log(BUF_SIZE - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
-        sys_ipc(IPC_LOG, ring_buffer.end, &(ring_buffer.buf[0]));
+        sys_log(ring_buffer.end, &(ring_buffer.buf[0]));
     }
     ring_buffer.end = 0;
     ring_buffer.start = ring_buffer.end;
