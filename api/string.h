@@ -15,4 +15,6 @@ void itoa(unsigned long long value, uint8_t base);
 
 uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...);
 
+int      strcmp(const char *s1, const char *s2);
+
 #endif
