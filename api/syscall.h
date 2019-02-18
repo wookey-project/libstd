@@ -4,12 +4,12 @@
 #include "autoconf.h"
 #include "interrupt.h"
 #include "api/types.h"
-#include "kernel/exported/syscalls.h"
-#include "kernel/exported/devices.h"
+#include "kernel/src/exported/syscalls.h"
+#include "kernel/src/exported/devices.h"
 #ifdef CONFIG_KERNEL_DMA_ENABLE
-#include "kernel/exported/dmas.h"
+#include "kernel/src/exported/dmas.h"
 #endif
-#include "kernel/exported/sleep.h"
+#include "kernel/src/exported/sleep.h"
 
 // FIXME - nothing to do here!
 #ifdef CONFIG_STM32F4

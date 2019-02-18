@@ -3,7 +3,6 @@
 #include "api/syscall.h"
 #include "stream/print_priv.h"
 #include "string/string_priv.h"
-#include "kernel/exported/syscalls.h"
 
 #define PUT_CHAR(c)					\
 	ring_buffer.buf[ring_buffer.end] = c;		\
