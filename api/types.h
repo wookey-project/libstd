@@ -10,6 +10,8 @@
 #endif
 
 typedef enum {false = 0, true = 1} bool;
+/* Secure boolean against fault injections for critical tests */
+typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 
 #if defined(__CC_ARM)
 # define __ASM            __asm  /* asm keyword for ARM Compiler    */
