@@ -7,6 +7,60 @@
 /* Required for variadic macros, compatible with gcc and llvm/clang */
 #define __GNU_SOURCES
 
+#ifdef __clang__
+/*** Clang/LLVM builtins ****/
+static inline void _memset(void *s, int c, uint32_t n)
+{
+    char *bytes = s;
+    while (n) {
+        *bytes = c;
+        bytes++;
+        n--;
+    }
+    return;
+}
+
+static inline void _memcpy(void *dest, const void *src, uint32_t n)
+{
+    char *d_bytes = dest;
+    const char *s_bytes = src;
+
+    while (n) {
+        *d_bytes = *s_bytes;
+        d_bytes++;
+        s_bytes++;
+        n--;
+    }
+
+    return;
+}
+
+void __aeabi_memclr(void *dest, int n){
+        _memset(dest, 0, n);
+}
+
+void __aeabi_memclr4(void *dest, int n){
+        _memset(dest, 0, n);
+}
+
+void __aeabi_memclr8(void *dest, int n){
+        _memset(dest, 0, n);
+}
+
+void __aeabi_memcpy(void *dest, const void *src, uint32_t n){
+	_memcpy(dest, src, n);
+}
+
+void __aeabi_memcpy4(void *dest, const void *src, uint32_t n){
+	_memcpy(dest, src, n);
+}
+
+void __aeabi_memcpy8(void *dest, const void *src, uint32_t n){
+	_memcpy(dest, src, n);
+}
+
+#endif
+
 /*
 ** This is the syscall user interface implementation
 */

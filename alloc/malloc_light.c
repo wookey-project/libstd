@@ -26,21 +26,7 @@ static int _update_inter_free(struct block *b_cur, struct block *b_nxt_int, u__s
 static int _unlink(struct block *b_cur);
 static int _link(struct block *b_cur, struct block *b_0);
 
-#if __GNUG__
-# pragma GCC push_options
-# pragma GCC optimize("O0")
-#endif
-#if __clang__
-# pragma clang optimize off
-#endif
 static void *_safe_flood_char(void *dest, const char c, uint32_t n);
-#if __clang__
-# pragma clang optimize on
-#endif
-#if __GNUG__
-# pragma GCC pop_options
-#endif
-
 
 /*
  * This function should be called by malloc_init() to
@@ -472,12 +458,14 @@ static int _link(struct block *b_cur, struct block *b_0)
 /****************************************************************************************/
 /****************************************************************************************/
 
-#if __GNUG__
+
+#ifdef __GNUC__
+#ifdef __clang__
+# pragma clang optimize off
+#else
 # pragma GCC push_options
 # pragma GCC optimize("O0")
 #endif
-#if __clang__
-# pragma clang optimize off
 #endif
 static void *_safe_flood_char(void *dest, const char c, uint32_t n)
 {
@@ -491,13 +479,13 @@ static void *_safe_flood_char(void *dest, const char c, uint32_t n)
 
     return dest;
 }
-#if __GNUG__
+#ifdef __GNUC__
+#ifdef __clang__
+# pragma clang optimize on
+#else
 # pragma GCC pop_options
 #endif
-#if __clang__
-# pragma clang optimize on
 #endif
-
 
 /****************************************************************************************/
 /****************************************************************************************/
