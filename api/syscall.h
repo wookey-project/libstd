@@ -43,7 +43,7 @@ struct gen_syscall_args {
  *   being replaced by the corresponding function at preprocessing time
  * \{
  */
-e_syscall_ret sys_init_INIT_DEVACCESS(uint32_t inittype, device_t *device, int *descriptor);
+e_syscall_ret sys_init_INIT_DEVACCESS(uint32_t inittype, const device_t *device, int *descriptor);
 e_syscall_ret sys_init_INIT_DMA(uint32_t inittype, volatile dma_t *dma, int *descriptor);
 e_syscall_ret sys_init_INIT_DMA_SHM(uint32_t inittype, dma_shm_t *dmashm);
 e_syscall_ret sys_init_INIT_GETTASKID(uint32_t inittype, char *name, uint8_t *id);

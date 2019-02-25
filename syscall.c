@@ -71,7 +71,7 @@ e_syscall_ret sys_yield(void)
 
     ret = do_syscall(&args);
 
-    return SYS_E_DONE;
+    return ret;
 }
 
 e_syscall_ret sys_lock(uint32_t action)
@@ -81,7 +81,7 @@ e_syscall_ret sys_lock(uint32_t action)
 
     ret = do_syscall(&args);
 
-    return SYS_E_DONE;
+    return ret;
 }
 
 e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode)
@@ -91,7 +91,7 @@ e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode)
 
     ret = do_syscall(&args);
 
-    return SYS_E_DONE;
+    return ret;
 }
 
 
@@ -103,7 +103,7 @@ e_syscall_ret sys_reset(void)
 
     ret = do_syscall(&args);
 
-    return SYS_E_DONE;
+    return ret;
 }
 
 
@@ -332,7 +332,7 @@ e_syscall_ret sys_cfg_CFG_DEV_RELEASE(uint32_t cfgtype, uint32_t devid)
 **   prototype: sys_init(INIT_DONE);
 */
 
-e_syscall_ret sys_init_INIT_DEVACCESS(uint32_t inittype, device_t *device, int *descriptor)
+e_syscall_ret sys_init_INIT_DEVACCESS(uint32_t inittype, const device_t *device, int *descriptor)
 {
     struct gen_syscall_args args =
         { SYS_INIT, (uint32_t) inittype, (uint32_t) device, (uint32_t) descriptor, 0 };
