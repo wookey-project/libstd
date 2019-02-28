@@ -26,6 +26,16 @@ bool semaphore_trylock(volatile uint32_t* semaphore)
     return core_semaphore_trylock(semaphore);
 }
 
+void semaphore_lock(volatile uint32_t* semaphore)
+{
+    bool is_locked = false;
+    do {
+        is_locked = core_semaphore_trylock(semaphore);
+    } while (!is_locked);
+}
+
+
+
 bool semaphore_release(volatile uint32_t* semaphore)
 {
     return core_semaphore_release(semaphore);

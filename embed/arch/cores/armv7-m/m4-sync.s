@@ -16,7 +16,7 @@ core_semaphore_trylock:
     ldrex   r1, [r0]
     cmp     r1, #0        /* Test if semaphore holds the value 0 */
                           /* If it does, block before retrying */
-    beq     fail_core_semaphore_trylock          
+    beq     fail_core_semaphore_trylock
     sub     r1, #1        /* If not, decrement temporary copy */
     strex   r2, r1, [r0]  /* Attempt Store-Exclusive */
     cmp     r2, #0        /* Check if Store-Exclusive succeeded */
@@ -39,7 +39,7 @@ core_semaphore_release:
     strex   r2, r1, [r0]  /* Attempt Store-Exclusive  */
     cmp     r2, #0        /* Check if Store-Exclusive succeeded */
                           /* If Store-Exclusive failed, retry from start */
-    bne     fail_core_semaphore_release 
+    bne     fail_core_semaphore_release
     dmb                   /* Required before accessing protected resource */
     pop {r1,r2}
     mov r0, #1
