@@ -44,10 +44,10 @@ void do_starttask(uint32_t slot, uint32_t seed)
     _main(slot);
 
     /* End of task */
-    asm ( "svc #1\n" :::);
+    asm volatile ( "svc #1\n" :::);
 
     /* give some time to SVC IRQ to rise */
-    while(1);
+    while(1){};
 }
 #if __clang__
 # pragma clang optimize on
@@ -93,7 +93,7 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
     }
 
     /* End of ISR */
-    asm volatile ( "svc #2\n" :::); 
+    asm volatile ( "svc #2\n" :::);
 
     /* give some time to SVC IRQ to rise */
     while(1){};
