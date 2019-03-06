@@ -3,12 +3,8 @@
 
 #include "autoconf.h"
 
-#ifdef TEST_X86
-#include <errno.h>
-#else
 #include "api/types.h"
-volatile uint32_t errno;
-#endif
+uint32_t malloc_errno;
 
 /* for EwoK */
 

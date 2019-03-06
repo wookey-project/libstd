@@ -115,7 +115,7 @@ int wmalloc_init(void)
 #else
 # error "not a supported allocator backend"
 #endif
-    
+
     /* If no kernel specified... */
     if ((!task_start_heap) || (!task_heap_size)) {
         return -1;
@@ -135,12 +135,12 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     struct block *b_0 = NULL;
     struct block *b_1 = NULL;
 
-    errno = 0;
-    
+    malloc_errno = 0;
+
     /* Size validity is checked */
 #if CONFIG_STD_MALLOC_SIZE_LEN == 16
     if (heap_size_tmp > 65535) {
-        errno = EHEAPSIZETOOBIG;
+        malloc_errno = EHEAPSIZETOOBIG;
         return -1;
     }
 #endif
@@ -148,9 +148,9 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 #if CONFIG_STD_MALLOC_ALIGN > 1
     heap_size_tmp = ALIGN(heap_size_tmp);
 #endif
-    
+
     if (heap_size_tmp < 2 * HDR_FREE_SZ) {
-        errno = EHEAPSIZETOOSMALL;
+        malloc_errno = EHEAPSIZETOOSMALL;
         return -1;
     }
 
@@ -165,7 +165,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 
     /* Trying to lock of wmalloc usage */
     if (!semaphore_trylock(&_semaphore)) {
-        errno = EHEAPLOCKED;
+        malloc_errno = EHEAPLOCKED;
         return -1;
     }
 
@@ -211,7 +211,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Unlocking of wmalloc usage */
     if (!semaphore_release(&_semaphore)) {
-        errno = EHEAPSEMAPHORE;
+        malloc_errno = EHEAPSEMAPHORE;
         return -1;
     }
 #endif

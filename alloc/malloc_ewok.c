@@ -83,7 +83,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #endif
     struct block *b_nxt_now     = NULL;
     struct block *b_nxt_int     = NULL;
- 
+
     uint8_t insered_block       = 0;
 
 #if STD_FREEMEM_CHECK >= 1
@@ -97,14 +97,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #endif
 
     /* Errno is initialized to zero */
-    errno = 0;
-    
+    malloc_errno = 0;
+
 #ifdef CONFIG_STD_MALLOC_MUTEX
     _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
 
     /* Trying to lock of wmalloc usage */
     if (!semaphore_trylock(&semaphore)) {
-        errno = EHEAPLOCKED;
+        malloc_errno = EHEAPLOCKED;
         return -1;
     }
 #endif
@@ -117,14 +117,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     /* Checking of the validity of the flag */
     if ((flag != ALLOC_NORMAL) && (flag != ALLOC_SENSITIVE)) {
-        errno = EHEAPFLAGNOTVALID;
+        malloc_errno = EHEAPFLAGNOTVALID;
         goto end_error;
     }
-    
+
 #if CONFIG_STD_MALLOC_CHECK_IF_NULL == 1
     /* We check if the pointer has not already been allocated */
     if (*ptr_to_alloc) {
-        errno = EHEAPALREADYALLOC;
+        malloc_errno = EHEAPALREADYALLOC;
         goto end_error;
     }
 #endif
@@ -132,7 +132,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #if CONFIG_STD_MALLOC_INTEGRITY >= 2
     /* Checking of the heap's integrity */
     if (_heap_integrity() < 0) {
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         goto end_error;
     }
 #elif CONFIG_STD_MALLOC_BASIC_CHECKS == 1
@@ -142,14 +142,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #  elif CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
     if ((OFFSET(b_cur) > OFFSET_MAX)) {
 #  endif
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         goto end_error;
     }
 #endif
 
     /* We check if there is free block into heap */
     if (!NB_FREE()) {
-        errno = EHEAPFULL;
+        malloc_errno = EHEAPFULL;
         goto end_error;
     }
 
@@ -170,13 +170,13 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     /* We check if there is definitively not enough memory for block */
     memory_available = (u__sz_t) (SZ_FREE() - (u__sz_t)(HDR_FREE_SZ * (NB_FREE() - 1)));
     if (sz > memory_available) {
-        errno = EHEAPNOMEM;
+        malloc_errno = EHEAPNOMEM;
         goto end_error;
     }
 #endif
 
     while (1) {
-        
+
 #ifdef CONFIG_STD_MALLOC_RANDOM
         if (random >= 0) {
 #endif
@@ -202,14 +202,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                     if (b_cur == b_0) {
                         b_cur = NXT_FREE(b_0);
                         continue;
-                    }            
+                    }
                 }
 #endif
 
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
                 /* We check the integrity of the header (if no heap integrity checking) */
                 if (check_hdr(b_cur, CHECK_ALL_FREE)) {
-                    errno = EHEAPINTEGRITY;
+                    malloc_errno = EHEAPINTEGRITY;
                     goto end_error;
                 }
 #endif
@@ -244,7 +244,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                     insered_block = 1;
                 } else {
                     if (_unlink(b_cur) < 0) {
-                        errno = EHEAPNODEF;
+                        malloc_errno = EHEAPNODEF;
                         goto end_error;
                     }
                     DECREASE_NB_FREE();
@@ -258,7 +258,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                     UPDATE_CANARI_GENE(b_nxt_now);
 #endif
                 }
-   
+
                 /* RAZ of the whole memory reserved for new allocated block's data */
                 if (flag == ALLOC_SENSITIVE) {
                     MAKE_SENSITIVE(b_cur);
@@ -273,7 +273,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
                 /* Increase the field "prv_free" of b_0 (total size of allocated memory) */
                 DECREASE_SZ_FREE(sz);
-                
+
 #if CANARIS_INTEGRITY == 1
                 /* b_0 first canari are updated for taking into account the modification of
                  * b_0->prv_sz = NB_FREE() and b_0->sz = SZ_FREE() */
@@ -289,7 +289,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #ifdef CONFIG_STD_MALLOC_MUTEX
                 /* Unlocking of wmalloc usage */
                 if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
-                    errno = EHEAPSEMAPHORE;
+                    malloc_errno = EHEAPSEMAPHORE;
                     return -1;
                 }
 #endif
@@ -307,14 +307,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
             memory_available -= (u__sz_t)(b_cur->sz + b_cur_bis->sz - (u__sz_t) 2*HDR_FREE_SZ);
 # endif
             if (sz > memory_available) {
-                errno = EHEAPNOMEM;
+                malloc_errno = EHEAPNOMEM;
                 goto end_error;
             }
 #endif
 #ifdef CONFIG_STD_MALLOC_RANDOM
         }
 #endif
-        
+
         /* We check the validity of b_cur->nxt_free and we go to the next free block:
          * - following free block by default
          * - first free block if the end is reached and conditions not fit to stop */
@@ -324,12 +324,12 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 # if CONFIG_STD_MALLOC_INTEGRITY < 2
 #  if CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
         if (b_cur->nxt_free > OFFSET_MAX) {
-            errno = EHEAPINTEGRITY;
+            malloc_errno = EHEAPINTEGRITY;
             goto end_error;
         }
 #  elif CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 1
         if ((b_cur->nxt_free > OFFSET_MAX) || (b_cur_bis->prv_free > OFFSET_MAX)) {
-            errno = EHEAPINTEGRITY;
+            malloc_errno = EHEAPINTEGRITY;
             goto end_error;
         }
 #  endif
@@ -348,15 +348,15 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
         /* If the last free block is reached without finding convenient one, we return -1 */
         if (random >= (int32_t) NB_FREE()) {
-            errno = EHEAPNOMEM;
+            malloc_errno = EHEAPNOMEM;
             goto end_error;
         }
     }
-    
+
 end_error:
-   
+
 #ifdef CONFIG_STD_MALLOC_MUTEX
-    /* Unlocking of wmalloc usage (errno is not modified in order to keep the value
+    /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
     semaphore_release((uint32_t *) _ptr_semaphore);
 #endif
@@ -428,18 +428,18 @@ int wfree(void **ptr_to_free)
     struct block *b_cur = NULL;
     struct block *b_prv = NULL;
     struct block *b_nxt = NULL;
-    
+
     uint8_t merged      = 0;
 
     /* Errno is initialized to zero */
-    errno = 0;
+    malloc_errno = 0;
 
 #ifdef CONFIG_STD_MALLOC_MUTEX
     _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
 
     /* Locking of wmalloc usage */
     if (!semaphore_trylock(&semaphore)) {
-        errno = EHEAPLOCKED;
+        malloc_errno = EHEAPLOCKED;
         return -1;
     }
 #endif
@@ -452,39 +452,39 @@ int wfree(void **ptr_to_free)
 
     /* We check if the pointer is not null */
     if (!(*ptr_to_free)) {
-        errno = EHEAPALREADYFREE;
+        malloc_errno = EHEAPALREADYFREE;
         goto end_error;
     }
 
     /* We check if the pointer is not out of range */
     if (((struct alloc_block *) (*ptr_to_free) < (struct alloc_block *) b_1 + 1) ||
         ((physaddr_t) (*ptr_to_free) > _end_heap)) {
-        errno = EHEAPOUTOFRANGE;
+        malloc_errno = EHEAPOUTOFRANGE;
         goto end_error;
     }
-    
+
     /* We get the block structure address from the pointer to be freed;
      * at the end of the function, b_cur will correspond with the free block,
      * in taking into account the eventual merging with previous and/or next frees blocks
      */
     b_cur = (struct block *) ((struct alloc_block *) (*ptr_to_free) - 1);
-    
+
     /* We check if the block has not already been freed */
     if (IS_FREE(b_cur)) {
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         goto end_error;
     }
 
 #if CONFIG_STD_MALLOC_INTEGRITY >= 2
     /* Checking of the heap's integrity */
     if (_heap_integrity() < 0) {
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         goto end_error;
     }
 #elif CONFIG_STD_MALLOC_INTEGRITY == 1
     /* We check the integrity of the header (if no heap integrity checking) */
     if (check_hdr(b_cur, CHECK_ALL_ALLOC)) {
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         goto end_error;
     }
 #endif
@@ -514,7 +514,7 @@ int wfree(void **ptr_to_free)
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
         /* We check the integrity of the header (if no heap integrity checking) */
         if (check_hdr(b_prv, CHECK_ALL_FREE)) {
-            errno = EHEAPINTEGRITY;
+            malloc_errno = EHEAPINTEGRITY;
             goto end_error;
         }
 #endif
@@ -522,16 +522,16 @@ int wfree(void **ptr_to_free)
         if (IS_FREE(b_prv)) {
 
             merged |= MERGED_WITH_PRV;
-        
+
             /* Last block updated (size increased) */
             b_prv->sz = (u__sz_t) (SIZE(b_prv) + SIZE(b_cur));
 #if CANARIS_INTEGRITY == 1
             UPDATE_CANARI_SZ(b_prv);
 #endif
-            
+
             /* RAZ of the current block's header */
             _safe_flood_char((char *) b_cur, CHAR_ZERO, HDR_SZ);
-            
+
             /* Effective merging */
             b_cur = b_prv;
         }
@@ -547,7 +547,7 @@ int wfree(void **ptr_to_free)
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
         /* We check the integrity of the header (if no heap integrity checking) */
         if (check_hdr(b_nxt, CHECK_ALL_FREE ^ CHECK_SZ_EQ_PRV)) {
-            errno = EHEAPINTEGRITY;
+            malloc_errno = EHEAPINTEGRITY;
             goto end_error;
         }
 #endif
@@ -575,7 +575,7 @@ int wfree(void **ptr_to_free)
 #if CANARIS_INTEGRITY == 1
             UPDATE_CANARI_FREE(NXT_FREE(b_cur));
 #endif
-            
+
             /* RAZ of tne next block's header */
             _safe_flood_char((char *) b_nxt, CHAR_ZERO, HDR_FREE_SZ);
         }
@@ -600,7 +600,7 @@ int wfree(void **ptr_to_free)
         if (merged & MERGED_WITH_NXT) {
             DECREASE_NB_FREE();
         }
-        
+
         goto end;
     }
 
@@ -608,7 +608,7 @@ int wfree(void **ptr_to_free)
     if (!merged) {
 
         if (_link(b_cur, b_0) < 0) {
-            errno = EHEAPNODEF;
+            malloc_errno = EHEAPNODEF;
             goto end_error;
         }
 
@@ -627,17 +627,17 @@ end:
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Unlocking of wmalloc usage */
     if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
-        errno = EHEAPSEMAPHORE;
+        malloc_errno = EHEAPSEMAPHORE;
         return -1;
     }
 #endif
 
     return 0;
-    
+
 end_error:
 
 #ifdef CONFIG_STD_MALLOC_MUTEX
-    /* Unlocking of wmalloc usage (errno is not modified in order to keep the value
+    /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
     semaphore_release((uint32_t *) _ptr_semaphore);
 #endif
@@ -658,7 +658,7 @@ static int _link(struct block *b_cur, struct block *b_0)
 #if CONFIG_STD_MALLOC_INTEGRITY == 0
 # if CONFIG_STD_MALLOC_BASIC_CHECKS >= 1
     if ((b_0->nxt_free > OFFSET_MAX) || (b_0->prv_free > OFFSET_MAX)) {
-        errno = EHEAPINTEGRITY;
+        malloc_errno = EHEAPINTEGRITY;
         return -1;
     }
 # endif
@@ -676,7 +676,7 @@ static int _link(struct block *b_cur, struct block *b_0)
         b_prv = NXT_FREE(b_prv);
         b_nxt = PRV_FREE(b_nxt);
     }
-    
+
     if (b_prv->nxt_free > o_cur) {
         b_nxt = NXT_FREE(b_prv);
     } else {
@@ -769,7 +769,7 @@ out:
 static inline int check_b_0(void)
 {
     struct block *b_0 = (struct block *) _start_heap;
-    
+
     int error = 0;
 
     if ((error = check_hdr(b_0, CHECK_CANARI|CHECK_FREE_ALL)) ||
@@ -799,7 +799,7 @@ static inline int check_free_headers(void)
     int error = 0;
 
     while ((b_cur = NXT_FREE(b_cur)) != b_0) {
-        
+
         if (b_cur > (struct block *) _end_heap - 1) {
             error = INTEGRITY_NXT_FREE;
             goto out;
@@ -841,7 +841,7 @@ static inline int check_free_headers(void)
 #else
     }
 #endif
-    
+
 out:
 
     return error;
@@ -872,7 +872,7 @@ static inline int check_alloc_headers(void)
             error = INTEGRITY_SZ;
             goto out;
         }
-        
+
         /* Next "current block" to check */
         b_cur = NEXT_SECU(b_cur);
 #else
@@ -958,7 +958,7 @@ static int check_sz(struct block *b, uint16_t flag)
             return INTEGRITY_SZ;
         }
     }
-    
+
     return 0;
 }
 #endif
@@ -986,7 +986,7 @@ static int check_free(struct block *b, uint16_t flag)
             return INTEGRITY_NXT_FREE;
         }
     }
-    
+
     return 0;
 }
 #endif
@@ -1044,7 +1044,7 @@ static int check_consistency(struct block * b, u__sz_t flag)
             return INTEGRITY_FREE_NEQ_NXT;
         }
     }
- 
+
     return 0;
 }
 #endif
@@ -1075,11 +1075,11 @@ int print_heap(void)
     printf("Integrity: OK\n\r-----\n\r");
 
     printf("%x  _start_heap\n\r", _start_heap);
-    
+
     b_cur = b_0;
 
     while ((physaddr_t) b_cur < _end_heap) {
-        
+
         printf("%x", (physaddr_t) b_cur);
 
         if IS_ALLOC(b_cur) {

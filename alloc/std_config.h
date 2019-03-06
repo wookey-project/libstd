@@ -83,7 +83,7 @@
                                            option is defined: 1 or 2 (0 else) */
 #define CHECK_PTR_NULL              0   /* At malloc(), pointer in argument is checked:
                                            if not null (possibly already allocated), the
-                                           function returns -1 with errno = EHEAPALREADYALLOC */
+                                           function returns -1 with malloc_errno = EHEAPALREADYALLOC */
 
 /* Integrity checking mode */
 
@@ -165,7 +165,7 @@
 
 #ifdef CANARIS_INTEGRITY
 # if HEAP_NB_CANARIS == 0
-#  error "Canari checking needs at least one canari!" 
+#  error "Canari checking needs at least one canari!"
 # endif
 #endif
 
