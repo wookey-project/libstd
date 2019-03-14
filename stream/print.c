@@ -1,8 +1,10 @@
 #include "api/print.h"
+#include "api/string.h"
 #include "api/types.h"
 #include "api/syscall.h"
 #include "stream/print_priv.h"
 #include "string/string_priv.h"
+
 
 #define PUT_CHAR(c)					\
 	ring_buffer.buf[ring_buffer.end] = c;		\
@@ -11,13 +13,6 @@
         ring_buffer.end %= BUF_MAX; \
     }
 
-static const char *strerror_tab[4] = {
-    "Done", //"Done: Syscall finished successfully",
-    "Inval", //"Inval: user informations are not valid",
-    "Denied", //"Denied: not the good time or access prohibed",
-    "Busy", //"Busy: already used or not enough space to use",
-};
-
 /* not static because it is used */
 static struct s_ring ring_buffer;
 
@@ -25,14 +20,41 @@ struct s_ring *stream_rb_get(void)
 {
     return &ring_buffer;
 }
+/***********************************************
+ * local utility functions
+ **********************************************/
 
-const char *strerror(uint8_t ret)
+static void write_digit(uint8_t digit)
 {
-    if (ret < SYS_E_MAX) {
-        return strerror_tab[ret];
-    }
-    return 0;
+    if (digit < 0xa)
+        digit += '0';
+    else
+        digit += 'a' - 0xa;
+    PUT_CHAR(digit);
 }
+
+
+
+void copy_string(char *str, uint32_t len)
+{
+    uint32_t size =
+        len < (BUF_MAX - stream_rb_get()->end) ? len : BUF_MAX - stream_rb_get()->end;
+    strncpy(stream_rb_get()->buf + stream_rb_get()->end, str, size);
+    uint32_t dist = stream_rb_get()->start - stream_rb_get()->end;
+    if (stream_rb_get()->end < stream_rb_get()->start && dist < size) {
+        stream_rb_get()->start += size - dist + 1;
+        stream_rb_get()->start %= BUF_MAX;
+    }
+    stream_rb_get()->end += size;
+    stream_rb_get()->end %= BUF_MAX;
+    if (len - size)
+        copy_string(str + size, len - size);
+}
+
+
+/***********************************************
+ * libstream API implementation
+ **********************************************/
 
 static void print_and_reset_buffer(void)
 {
@@ -67,48 +89,6 @@ void init_ring_buffer(void)
         ring_buffer.buf[i] = '\0';
     }
 }
-
-void *memset(void *s, int c, uint32_t n)
-{
-    char *bytes = s;
-    while (n) {
-        *bytes = c;
-        bytes++;
-        n--;
-    }
-    return s;
-}
-
-void *memcpy(void *dest, const void *src, uint32_t n)
-{
-    char *d_bytes = dest;
-    const char *s_bytes = src;
-
-    while (n) {
-        *d_bytes = *s_bytes;
-        d_bytes++;
-        s_bytes++;
-        n--;
-    }
-
-    return dest;
-}
-
-int memcmp(const void *s1, const void *s2, int n)
-{
-    unsigned char u1, u2;
-
-    for (; n--; s1++, s2++) {
-        u1 = *(const unsigned char *)s1;
-        u2 = *(const unsigned char *)s2;
-        if (u1 != u2) {
-            return (u1 - u2);
-        }
-    }
-
-    return 0;
-}
-
 
 
 void print(char *fmt, va_list args)
@@ -203,3 +183,52 @@ void hexdump(const uint8_t *bin, uint32_t len)
   }
   printf("\n");
 }
+
+uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
+{
+    va_list args;
+    uint32_t sizew = 0;
+
+    va_start(args, fmt);
+    print(fmt, args);
+    va_end(args);
+    if (stream_rb_get()->end < len) {
+      sizew = stream_rb_get()->end;
+    } else {
+      sizew = len - 1;
+    }
+    memcpy(dst, &(stream_rb_get()->buf[stream_rb_get()->start]), sizew);
+    dst[sizew] = '\0';
+
+    stream_rb_get()->end = 0;
+    stream_rb_get()->start = stream_rb_get()->end;
+    for (uint16_t i = 0; i < BUF_MAX; i++) {
+        stream_rb_get()->buf[i] = '\0';
+    }
+    return sizew + 1;
+}
+
+void itoa(uint64_t value, uint8_t base)
+{
+    /* we define a local storage to hold the digits list
+     * in any possible base up to base 2 (64 bits) */
+    uint8_t number[64] = { 0 };
+    int index = 0;
+
+    for (; value / base != 0; value /= base) {
+        number[index++] = value % base;
+    }
+    /* finishing with most significant unit */
+    number[index++] = value % base;
+
+    /* Due to the last 'index++', index is targetting the first free cell.
+     * We make it points the last *used* cell instead */
+    index--;
+
+    /* now we can print out, starting with the most significant unit */
+    for (; index >= 0; index--) {
+        write_digit(number[index]);
+    }
+}
+
+

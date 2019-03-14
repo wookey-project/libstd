@@ -1,24 +1,62 @@
 #include "string.h"
 #include "print.h"
+#include "api/syscall.h"
 
 #include "print_priv.h"
 
+#define UNDEFINED_BEHAVIOR_INT_VALUE 42
+#define UNDEFINED_BEHAVIOR_STR_VALUE NULL
 
-extern struct s_ring ring_buffer; /* hosted by libstd libstream print.c */
+static const char *strerror_tab[4] = {
+    "Done", //"Done: Syscall finished successfully",
+    "Inval", //"Inval: user informations are not valid",
+    "Denied", //"Denied: not the good time or access prohibed",
+    "Busy", //"Busy: already used or not enough space to use",
+};
 
-#define PUT_CHAR(c)					\
-	stream_rb_get()->buf[stream_rb_get()->end++] = c;		\
-	stream_rb_get()->end %= BUF_MAX;			\
-	if (stream_rb_get()->end == stream_rb_get()->start) {	\
-		stream_rb_get()->start++;			\
-		stream_rb_get()->start %= BUF_MAX;		\
-	}
+/***********************************************
+ * libstring API implementation
+ **********************************************/
 
+/*
+ * Not fully POSIX compliant (as no errno support) implementation of
+ * strerror for syscalls return values
+ */
+const char *strerror(uint8_t ret)
+{
+    if (ret < SYS_E_MAX) {
+        return strerror_tab[ret];
+    }
+    return 0;
+}
 
-
+/*
+ * Calculate the length of a NULL-terminated string.
+ *
+ * The length is equal to the effective number of characters, not
+ * including the '\0' terminal one.
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
 uint32_t strlen(const char *s)
 {
     uint32_t i = 0;
+
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!s) {
+        return UNDEFINED_BEHAVIOR_INT_VALUE;
+    }
+
     while (*s) {
         i++;
         s++;
@@ -26,106 +64,252 @@ uint32_t strlen(const char *s)
     return i;
 }
 
-int      strcmp(const char *s1, const char *s2)
+/*
+ * Compare two strings
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+int strcmp(const char *s1, const char *s2)
 {
-    if (!s1 && !s2) {
-        return 0;
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!s1 || !s2) {
+        return UNDEFINED_BEHAVIOR_INT_VALUE;
     }
-    if (s1 && !s2) {
-        return 1;
-    }
-    if (!s1 && s2) {
-        return -1;
-    }
+
     for (uint32_t i = 0; s1[i] != '\0' && s2[i] != '\0'; ++i) {
         if (s1[i] == s2[i]) {
             continue;
-        } else if (s1[i] > s2[i]) {
-            return 1;
         } else {
-            return -1;
+            return (s1[i] - s2[i]);
         }
     }
     return 0;
 }
 
+/*
+ * Compare n first bytes of two strings
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+int strncmp(const char *s1, const char *s2, uint32_t n)
+{
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!s1 || !s2) {
+        return UNDEFINED_BEHAVIOR_INT_VALUE;
+    }
+
+    for (uint32_t i = 0; s1[i] != '\0' && s2[i] != '\0' && i < n; ++i) {
+        if (s1[i] == s2[i]) {
+            continue;
+        } else {
+            return (s1[i] - s2[i]);
+        }
+    }
+    return 0;
+}
+
+/*
+ * Copy content from one string to another
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * WARNING: the length of dest *MUST* be known as greater than src lenght.
+ * This function does *not* handle bound checking as it is not standard conform.
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+char *strcpy(char *dest, const char *src)
+{
+    uint32_t i;
+
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!dest || !src) {
+        return UNDEFINED_BEHAVIOR_STR_VALUE;
+    }
+
+
+    /* copying up to n bytes from src */
+    for (i = 0; src[i] != '\0'; i++) {
+            dest[i] = src[i];
+    }
+    /* finishing with '\0' */
+    dest[i] = src[i];
+
+    return dest;
+}
+
+
+/*
+ * Copy n first bytes from one string to another
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
 char *strncpy(char *dest, const char *src, uint32_t n)
 {
-    char *return_value = dest;
+    uint32_t i;
 
-    while (n && *src) {
-        *dest = *src;
-        dest++;
-        src++;
-        n--;
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!dest || !src) {
+        return UNDEFINED_BEHAVIOR_STR_VALUE;
     }
 
+    /* copying up to n bytes from src */
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+            dest[i] = src[i];
+    }
+    /* if src length is less than n, finishing with '\0' up to n */
+    for ( ; i < n; i++) {
+        dest[i] = '\0';
+    }
+
+    return dest;
+}
+
+/*
+ * Copy n bytes from one memory area to another
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Beware that there is no bound checking in byte-based memory manipulation
+ * functions.
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+void *memcpy(void *dest, const void *src, uint32_t n)
+{
+    char *d_bytes = dest;
+    const char *s_bytes = src;
+
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!dest || !src) {
+        return UNDEFINED_BEHAVIOR_STR_VALUE;
+    }
+
+
+    /* Copying from source to destination. As described in POSIX and other
+     * standards, memcpy considers that memory regions must not overlap.
+     * As a consequence, there is no overlap check here */
     while (n) {
-        *dest = '\0';
-        dest++;
+        *d_bytes = *s_bytes;
+        d_bytes++;
+        s_bytes++;
         n--;
     }
-
-    return return_value;
+    return dest;
 }
 
-static void write_digit(uint8_t digit)
+/*
+ * Compare n first bytes of two memory areas
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+int memcmp(const void *s1, const void *s2, int n)
 {
-    if (digit < 0xa)
-        digit += '0';
-    else
-        digit += 'a' - 0xa;
-    PUT_CHAR(digit);
+    unsigned char u1, u2;
+
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!s1 || !s2) {
+        return UNDEFINED_BEHAVIOR_INT_VALUE;
+    }
+
+
+    /* looping upto n == 0 */
+    for (; n--; s1++, s2++) {
+        u1 = *(const unsigned char *)s1;
+        u2 = *(const unsigned char *)s2;
+        if (u1 != u2) {
+            return (u1 - u2);
+        }
+    }
+
+    return 0;
 }
 
-void itoa(unsigned long long value, uint8_t base)
+/*
+ * Set n first bytes of a given memory area with a given byte value
+ *
+ * INFO: The C standard says that null argument(s) to string
+ * functions produce undefined behavior.
+ *
+ * This is a global warning for the POSIX and C99/C99 libstring:
+ * check your arguments before using it!
+ *
+ * Conforming to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
+ */
+void *memset(void *s, int c, uint32_t n)
 {
-    if (value / base == 0) {
-        write_digit(value % base);
-    } else {
-        itoa(value / base, base);
-        write_digit(value % base);
+    /* sanitation. This part can produce, as defined in the above
+     * standard, an 'undefined behavior'. As a consequence, in all
+     * string function, invalid input will produce, for integer
+     * return, returning 42, for string return, returning NULL */
+    if (!s) {
+        return UNDEFINED_BEHAVIOR_STR_VALUE;
     }
+
+    /* memseting s with c */
+    char *bytes = s;
+    while (n) {
+        *bytes = c;
+        bytes++;
+        n--;
+    }
+    return s;
 }
-
-void copy_string(char *str, uint32_t len)
-{
-    uint32_t size =
-        len < (BUF_MAX - stream_rb_get()->end) ? len : BUF_MAX - stream_rb_get()->end;
-    strncpy(stream_rb_get()->buf + stream_rb_get()->end, str, size);
-    uint32_t dist = stream_rb_get()->start - stream_rb_get()->end;
-    if (stream_rb_get()->end < stream_rb_get()->start && dist < size) {
-        stream_rb_get()->start += size - dist + 1;
-        stream_rb_get()->start %= BUF_MAX;
-    }
-    stream_rb_get()->end += size;
-    stream_rb_get()->end %= BUF_MAX;
-    if (len - size)
-        copy_string(str + size, len - size);
-}
-
-uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
-{
-    va_list args;
-    uint32_t sizew = 0;
-
-    va_start(args, fmt);
-    print(fmt, args);
-    va_end(args);
-    if (stream_rb_get()->end < len) {
-      sizew = stream_rb_get()->end;
-    } else {
-      sizew = len - 1;
-    }
-    memcpy(dst, &(stream_rb_get()->buf[stream_rb_get()->start]), sizew);
-    dst[sizew] = '\0';
-
-    stream_rb_get()->end = 0;
-    stream_rb_get()->start = stream_rb_get()->end;
-    for (uint16_t i = 0; i < BUF_MAX; i++) {
-        stream_rb_get()->buf[i] = '\0';
-    }
-    return sizew + 1;
-}
-
 
