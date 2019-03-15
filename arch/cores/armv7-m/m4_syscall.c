@@ -1,5 +1,6 @@
 #include "api/syscall.h"
-#include "print_priv.h"
+#include "api/print.h"
+#include "stream/stream_priv.h"
 
 /* Global variable holding the stack canary value */
 volatile uint32_t __stack_chk_guard = 0;

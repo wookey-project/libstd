@@ -2,7 +2,7 @@
 #include "api/string.h"
 #include "api/types.h"
 #include "api/syscall.h"
-#include "stream/print_priv.h"
+#include "stream/stream_priv.h"
 #include "string/string_priv.h"
 
 /* asyncrhonous printf, for handlers */
@@ -20,28 +20,6 @@ void aprintf_flush(void)
 }
 
 
-void itoa(uint64_t value, uint8_t base)
-{
-    /* we define a local storage to hold the digits list
-     * in any possible base up to base 2 (64 bits) */
-    uint8_t number[64] = { 0 };
-    int index = 0;
-
-    for (; value / base != 0; value /= base) {
-        number[index++] = value % base;
-    }
-    /* finishing with most significant unit */
-    number[index++] = value % base;
-
-    /* Due to the last 'index++', index is targetting the first free cell.
-     * We make it points the last *used* cell instead */
-    index--;
-
-    /* now we can print out, starting with the most significant unit */
-    for (; index >= 0; index--) {
-        write_digit(number[index]);
-    }
-}
 
 void hexdump(const uint8_t *bin, uint32_t len)
 {

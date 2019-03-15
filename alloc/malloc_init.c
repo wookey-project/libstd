@@ -95,15 +95,15 @@ int wmalloc_init(void)
                                   ((uint32_t) &_e_data  - (uint32_t) &_s_data) - \
                                   ((uint32_t) &_e_bss   - (uint32_t) &_s_bss));
 #if 1 /* for debug purpose */
-    printf("heap start: %x\n", task_start_heap);
-    printf("heap size: %x\n", task_heap_size);
-    printf("num slots: %x\n", &numslots);
-    printf("data start: %x\n", &_s_data);
-    printf("data end: %x\n", &_e_data);
-    printf("bss start: %x\n", &_s_bss);
-    printf("bss end: %x\n", &_e_bss);
-    printf("stack start: %x\n", &_s_stack);
-    printf("stack end: %x\n", &_e_stack);
+    printf("heap start: 0x%08x\n", task_start_heap);
+    printf("heap size: 0x%06x\n", task_heap_size);
+    printf("num slots: 0x%02d\n", &numslots);
+    printf("data start: 0x%08x\n", &_s_data);
+    printf("data end: 0x%08x\n", &_e_data);
+    printf("bss start: 0x%08x\n", &_s_bss);
+    printf("bss end: 0x%08x\n", &_e_bss);
+    printf("stack start: 0x%08x\n", &_s_stack);
+    printf("stack end: 0x%08x\n", &_e_stack);
 #endif
 
 #ifdef CONFIG_STD_MALLOC_LIGHT

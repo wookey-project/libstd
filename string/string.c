@@ -2,8 +2,6 @@
 #include "print.h"
 #include "api/syscall.h"
 
-#include "print_priv.h"
-
 #define UNDEFINED_BEHAVIOR_INT_VALUE 42
 #define UNDEFINED_BEHAVIOR_STR_VALUE NULL
 

@@ -1,6 +1,7 @@
 #ifndef STREAM_PRIV_H_
 # define STREAM_PRIV_H_
 
+#include <stdarg.h>
 #include "api/types.h"
 
 #define BUF_SIZE	512
@@ -13,12 +14,10 @@ struct s_ring {
     char buf[BUF_SIZE];
 };
 
-void write_digit(uint8_t digit);
-
-void copy_string(char *str, uint32_t len);
+void init_ring_buffer(void);
 
 void print_and_reset_buffer(void);
 
-void init_ring_buffer(void);
+void print(char *fmt, va_list args);
 
 #endif/*!STREAM_PRIV_H_*/
