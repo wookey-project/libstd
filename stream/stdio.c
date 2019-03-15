@@ -222,16 +222,10 @@ static uint8_t get_number_len(uint64_t value, uint8_t base)
  *************************************************/
 
 typedef enum {
-    FS_TYPE_UNKNOWN = 0,
-    FS_TYPE_NUMERIC,
-    FS_TYPE_STRING,
-    FS_TYPE_CHAR
-} fs_type_t;
-
-
-typedef enum {
     FS_NUM_DECIMAL,
     FS_NUM_HEX,
+    FS_NUM_UCHAR,
+    FS_NUM_SHORT,
     FS_NUM_LONG,
     FS_NUM_LONGLONG,
     FS_NUM_UNSIGNED,
@@ -241,8 +235,7 @@ typedef struct {
     bool           attr_0len;
     bool           attr_size;
     uint8_t        size;
-    fs_type_t      type;
-    fs_num_mode_t  mode;
+    fs_num_mode_t  numeric_mode;
     bool           started;
     uint8_t        consumed;
 } fs_properties_t;
@@ -261,13 +254,12 @@ typedef struct {
 static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_t *consumed)
 {
     fs_properties_t fs_prop = {
-        .attr_0len = false,
-        .attr_size = false,
-        .size      = 0,
-        .type      = FS_TYPE_UNKNOWN,
-        .mode      = FS_NUM_DECIMAL, /*default */
-        .started   = false,
-        .consumed  = 0
+        .attr_0len     = false,
+        .attr_size     = false,
+        .size          = 0,
+        .numeric_mode  = FS_NUM_DECIMAL, /*default */
+        .started       = false,
+        .consumed      = 0
     };
 
     /*
@@ -324,6 +316,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 break;
             }
             case 'd':
+            case 'i':
             {
                 /*
                  * Handling integers
@@ -331,6 +324,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 if (fs_prop.started == false) {
                     goto err;
                 }
+                fs_prop.numeric_mode = FS_NUM_DECIMAL;
                 int val = va_arg(*args, int);
                 uint8_t len = get_number_len(val, 10);
                 if (fs_prop.attr_size && fs_prop.attr_0len) {
@@ -345,6 +339,88 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 /* => end of format string */
                 goto end;
             }
+            case 'l':
+            {
+                /*
+                 * Handling long and long long int
+                 */
+                long lval;
+                long long llval;
+                uint8_t len;
+
+                if (fs_prop.started == false) {
+                    goto err;
+                }
+                fs_prop.numeric_mode = FS_NUM_LONG;
+                /* detecting long long */
+                if (fmt[fs_prop.consumed + 1] == 'l') {
+                    fs_prop.numeric_mode = FS_NUM_LONGLONG;
+                    fs_prop.consumed++;
+                }
+                if (fs_prop.numeric_mode == FS_NUM_LONG) {
+                    lval = va_arg(*args, long);
+                    len = get_number_len(lval, 10);
+                } else {
+                    llval = va_arg(*args, long long);
+                    len = get_number_len(llval, 10);
+                }
+                if (fs_prop.attr_size && fs_prop.attr_0len) {
+                    /* we have to pad with 0 the number to reach
+                     * the desired size */
+                    for (uint32_t i = len; i < fs_prop.size; ++i) {
+                        ring_buffer_write_char('0');
+                    }
+                }
+                /* now we can print the number in argument */
+                if (fs_prop.numeric_mode == FS_NUM_LONG) {
+                    ring_buffer_write_number(lval, 10);
+                } else {
+                    ring_buffer_write_number(llval, 10);
+                }
+                /* => end of format string */
+                goto end;
+            }
+            case 'h':
+            {
+                /*
+                 * Handling long and long long int
+                 */
+                short s_val;
+                unsigned char uc_val;
+                uint8_t len;
+
+                if (fs_prop.started == false) {
+                    goto err;
+                }
+                fs_prop.numeric_mode = FS_NUM_SHORT;
+                /* detecting long long */
+                if (fmt[fs_prop.consumed + 1] == 'h') {
+                    fs_prop.numeric_mode = FS_NUM_UCHAR;
+                    fs_prop.consumed++;
+                }
+                if (fs_prop.numeric_mode == FS_NUM_SHORT) {
+                    s_val = (short)va_arg(*args, int);
+                    len = get_number_len(s_val, 10);
+                } else {
+                    uc_val = (unsigned char)va_arg(*args, int);
+                    len = get_number_len(uc_val, 10);
+                }
+                if (fs_prop.attr_size && fs_prop.attr_0len) {
+                    /* we have to pad with 0 the number to reach
+                     * the desired size */
+                    for (uint32_t i = len; i < fs_prop.size; ++i) {
+                        ring_buffer_write_char('0');
+                    }
+                }
+                /* now we can print the number in argument */
+                if (fs_prop.numeric_mode == FS_NUM_SHORT) {
+                    ring_buffer_write_number(s_val, 10);
+                } else {
+                    ring_buffer_write_number(uc_val, 10);
+                }
+                /* => end of format string */
+                goto end;
+            }
             case 'u':
             {
                 /*
@@ -353,6 +429,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 if (fs_prop.started == false) {
                     goto err;
                 }
+                fs_prop.numeric_mode = FS_NUM_UNSIGNED;
                 uint32_t val = va_arg(*args, uint32_t);
                 uint8_t len = get_number_len(val, 10);
                 if (fs_prop.attr_size && fs_prop.attr_0len) {
@@ -367,6 +444,27 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 /* => end of format string */
                 goto end;
             }
+            case 'p':
+            {
+                /*
+                 * Handling pointers. Include 0x prefix, as if using
+                 * %#x format string in POSIX printf.
+                 */
+                if (fs_prop.started == false) {
+                    goto err;
+                }
+                uint32_t val = va_arg(*args, physaddr_t);
+                uint8_t len = get_number_len(val, 16);
+                ring_buffer_write_string("0x", 2);
+                for (uint32_t i = len; i < fs_prop.size; ++i) {
+                    ring_buffer_write_char('0');
+                }
+                /* now we can print the number in argument */
+                ring_buffer_write_number(val, 16);
+                /* => end of format string */
+                goto end;
+            }
+
             case 'x':
             {
                 /*
@@ -375,6 +473,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 if (fs_prop.started == false) {
                     goto err;
                 }
+                fs_prop.numeric_mode = FS_NUM_UNSIGNED;
                 uint32_t val = va_arg(*args, uint32_t);
                 uint8_t len = get_number_len(val, 16);
                 if (fs_prop.attr_size && fs_prop.attr_0len) {
@@ -397,6 +496,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 if (fs_prop.started == false) {
                     goto err;
                 }
+                fs_prop.numeric_mode = FS_NUM_UNSIGNED;
                 uint32_t val = va_arg(*args, uint32_t);
                 uint8_t len = get_number_len(val, 8);
                 if (fs_prop.attr_size && fs_prop.attr_0len) {
