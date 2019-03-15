@@ -18,6 +18,6 @@ void init_ring_buffer(void);
 
 void print_and_reset_buffer(void);
 
-void print(char *fmt, va_list args);
+int print(char *fmt, va_list args);
 
 #endif/*!STREAM_PRIV_H_*/

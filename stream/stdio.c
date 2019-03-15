@@ -575,9 +575,9 @@ err:
  * Print a given fmt string, considering variable arguments given in args.
  * This function *does not* flush the ring buffer, but only fullfill it.
  */
-void print(char *fmt, va_list args)
+int print(char *fmt, va_list args)
 {
-    uint32_t i = 0;
+    int i = 0;
     uint8_t consumed = 0;
 
     while (fmt[i]) {
@@ -591,8 +591,9 @@ void print(char *fmt, va_list args)
             ring_buffer_write_char(fmt[i++]);
         }
     }
+    return i;
 err:
-    return;
+    return -1;
 }
 
 
@@ -603,10 +604,10 @@ err:
 /*
  * Standard printf API.
  *
- * The printf implementation does not support
  */
-void printf(char *fmt, ...)
+int printf(char *fmt, ...)
 {
+    int res = 0;
     va_list args;
 
     /*
@@ -615,9 +616,10 @@ void printf(char *fmt, ...)
      */
     print_and_reset_buffer();
     va_start(args, fmt);
-    print(fmt, args);
+    res = print(fmt, args);
     va_end(args);
     print_and_reset_buffer();
+    return res;
 }
 
 
@@ -637,10 +639,21 @@ uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
     memcpy(dst, &(ring_buffer.buf[ring_buffer.start]), sizew);
     dst[sizew] = '\0';
 
-    ring_buffer.end = 0;
-    ring_buffer.start = ring_buffer.end;
-    for (uint16_t i = 0; i < BUF_MAX; i++) {
-        ring_buffer.buf[i] = '\0';
+    /* rewind content, FIXME: not yet clean enough... */
+    if (ring_buffer.end >= len) {
+        for (uint16_t i = ring_buffer.end - len; i < ring_buffer.end; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        ring_buffer.end -= len;
+    } else {
+        uint32_t first = ring_buffer.end;
+        for (uint16_t i = 0; i < ring_buffer.end; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        for (uint16_t i = BUF_MAX - len + first; i < BUF_MAX; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        ring_buffer.end =  BUF_MAX - len + first;
     }
     return sizew + 1;
 }
