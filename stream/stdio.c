@@ -656,10 +656,36 @@ int printf(char *fmt, ...)
 ** aprintf when printf or sprintf is currently being used, or using another
 ** ring buffer
 **/
-uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
+uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...)
 {
     va_list args;
     uint32_t sizew = 0;
+    uint32_t to_copy;
+
+    va_start(args, fmt);
+    sizew = print(fmt, args);
+    va_end(args);
+    /* copy the string we have just written to the ring buffer
+     * into the dst string
+     */
+    if (sizew > len) {
+       to_copy = len;
+    } else {
+      to_copy = sizew;
+    }
+    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), to_copy);
+    dst[to_copy] = '\0';
+    /* rewind ring buffer content we have just written */
+    ring_buffer_rewind(sizew);
+    /* returning the number of written chars */
+    return to_copy;
+}
+
+uint32_t sprintf(char *dst, char *fmt, ...)
+{
+    va_list args;
+    uint32_t sizew = 0;
+    uint32_t to_copy;
 
     va_start(args, fmt);
     sizew = print(fmt, args);
@@ -671,11 +697,6 @@ uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
     dst[sizew] = '\0';
     /* rewind ring buffer content we have just written */
     ring_buffer_rewind(sizew);
-    /* returning the number of written chars, including the
-     * ending null char
-     * TODO: this char should not be counted, as it is not in
-     * printf() API
-     */
-    return sizew + 1;
+    /* returning the number of written chars */
+    return sizew;
 }
-
