@@ -196,6 +196,34 @@ void print_and_reset_buffer(void)
     }
 }
 
+/*
+ * Rewind the ring buffer of the given len. This function remove
+ * len chars (at most) from the ring buffer and return the effectively
+ * removed number of chars, depending on the current ring buffer state
+ */
+uint32_t ring_buffer_rewind(uint32_t len)
+{
+    if (len >= BUF_MAX) {
+      return 0;
+    }
+    if (ring_buffer.end >= len) {
+        for (uint16_t i = ring_buffer.end - len; i < ring_buffer.end; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        ring_buffer.end -= len;
+    } else {
+        uint32_t first = ring_buffer.end;
+        for (uint16_t i = 0; i < ring_buffer.end; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        for (uint16_t i = BUF_MAX - len + first; i < BUF_MAX; i++) {
+            ring_buffer.buf[i] = '\0';
+        }
+        ring_buffer.end =  BUF_MAX - len + first;
+    }
+    return len;
+}
+
 
 /*********************************************
  * other, not ring-buffer associated local utility functions
@@ -622,40 +650,32 @@ int printf(char *fmt, ...)
     return res;
 }
 
-
+/*
+** FIXME: printf and sprintf should lock ISR as aprintf may asynchronously
+** use the ring buffer. Other way: lock the ring buffer to avoid using
+** aprintf when printf or sprintf is currently being used, or using another
+** ring buffer
+**/
 uint32_t sprintf(char *dst, uint16_t len, char *fmt, ...)
 {
     va_list args;
     uint32_t sizew = 0;
 
     va_start(args, fmt);
-    print(fmt, args);
+    sizew = print(fmt, args);
     va_end(args);
-    if (ring_buffer.end < len) {
-      sizew = ring_buffer.end;
-    } else {
-      sizew = len - 1;
-    }
-    memcpy(dst, &(ring_buffer.buf[ring_buffer.start]), sizew);
+    /* copy the string we have just written to the ring buffer
+     * into the dst string
+     */
+    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), sizew);
     dst[sizew] = '\0';
-
-    /* rewind content, FIXME: not yet clean enough... */
-    if (ring_buffer.end >= len) {
-        for (uint16_t i = ring_buffer.end - len; i < ring_buffer.end; i++) {
-            ring_buffer.buf[i] = '\0';
-        }
-        ring_buffer.end -= len;
-    } else {
-        uint32_t first = ring_buffer.end;
-        for (uint16_t i = 0; i < ring_buffer.end; i++) {
-            ring_buffer.buf[i] = '\0';
-        }
-        for (uint16_t i = BUF_MAX - len + first; i < BUF_MAX; i++) {
-            ring_buffer.buf[i] = '\0';
-        }
-        ring_buffer.end =  BUF_MAX - len + first;
-    }
+    /* rewind ring buffer content we have just written */
+    ring_buffer_rewind(sizew);
+    /* returning the number of written chars, including the
+     * ending null char
+     * TODO: this char should not be counted, as it is not in
+     * printf() API
+     */
     return sizew + 1;
 }
-
 
