@@ -57,7 +57,7 @@ int printf(char *fmt, ...);
 /*
  * formatted printing to a given buffer.
  */
-uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...)
+uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...);
 
 uint32_t sprintf(char *dst, char *fmt, ...);
 

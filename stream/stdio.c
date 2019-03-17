@@ -685,7 +685,6 @@ uint32_t sprintf(char *dst, char *fmt, ...)
 {
     va_list args;
     uint32_t sizew = 0;
-    uint32_t to_copy;
 
     va_start(args, fmt);
     sizew = print(fmt, args);
