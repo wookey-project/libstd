@@ -79,7 +79,7 @@ static struct s_ring ring_buffer;
  * any potential dead lock with the main thread as ISR are
  * executed with a higher priority.
  */
-static volatile uint32_t rb_lock = 0;
+static volatile uint32_t rb_lock = 1;
 
 /*
  * the ring buffer is a part of bss (not data, making it
