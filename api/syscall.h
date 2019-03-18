@@ -25,7 +25,7 @@
 #define SYSCALL_H
 
 #include "autoconf.h"
-#include "interrupt.h"
+#include "api/interrupt.h"
 #include "api/types.h"
 #include "kernel/src/exported/syscalls.h"
 #include "kernel/src/exported/devices.h"
