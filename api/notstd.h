@@ -21,25 +21,15 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef SEMAPHORE_H_
-#define SEMAPHORE_H_
+#ifndef NOSTD_H_
+#define NOSTD_H_
 
-/* semaphore, with potential concurrent access allowed */
-void semaphore_init(uint8_t value, volatile uint32_t* semaphore);
+/* others, non-POSIX compliant */
 
-bool semaphore_trylock(volatile uint32_t* semaphore);
+void hexdump(const uint8_t *bin, uint32_t len);
 
-void semaphore_lock(volatile uint32_t* semaphore);
+int aprintf(char *fmt, ...);
 
-bool semaphore_release(volatile uint32_t* semaphore);
+int aprintf_flush(void);
 
-/* effective mutex (Mutual Exclusion) */
-void mutex_init(volatile uint32_t* mutex);
-
-bool mutex_trylock(volatile uint32_t* mutex);
-
-void mutex_lock(volatile uint32_t* mutex);
-
-void mutex_unlock(volatile uint32_t* mutex);
-
-#endif
+#endif/*!NOSTD_H_*/

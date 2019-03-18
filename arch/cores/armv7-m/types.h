@@ -21,4 +21,7 @@ typedef uint8_t logsize_t;
 /* 32bits targets specific */
 typedef uint32_t physaddr_t;
 
+typedef unsigned int size_t;
+typedef int ssize_t;
+
 #endif/*!ARCH_TYPES_H*/

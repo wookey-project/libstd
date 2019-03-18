@@ -9,7 +9,8 @@
 #include "malloc_errno.h"   /* Specific wmalloc errno values */
 #include "api/types.h"
 #include "api/malloc.h"
-#include "api/print.h"
+#include "api/stdio.h"
+#include "api/nostd.h"
 #include "api/semaphore.h"
 
 

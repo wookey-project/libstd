@@ -1,3 +1,26 @@
+/*
+ *
+ * Copyright 2018 The wookey project team <wookey@ssi.gouv.fr>
+ *   - Ryad     Benadjila
+ *   - Arnauld  Michelizza
+ *   - Mathieu  Renard
+ *   - Philippe Thierry
+ *   - Philippe Trebuchet
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * ur option) any later version.
+ *
+ * This package is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with this package; if not, write to the Free Software Foundation, Inc., 51
+ * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
 #ifndef PRINT_H
 #define PRINT_H
 
@@ -13,7 +36,9 @@
  * printf() familly
  *
  * This implementation of printf implement a subset
- * of the POSIX.1-2001 and C99 standard API.
+ * of the POSIX.1-2001 and C99 standard API (as we are in an embedded system)
+ * Although, the behavior of the functions for the supported flags chars
+ * and lenght modifiers is conform to the standard.
  *
  * The following is supported:
  *
@@ -42,6 +67,10 @@
  *  other flags characters and length modifiers are not supported,
  *  generating an immediate stop of the fmt parsing.
  *
+ * Conforming (for the supported flags and length modifier and error return)
+ * to:
+ * POSIX.1-2001, POSIX.1-2008, C89, C99
+ *
  */
 
 /*
@@ -55,18 +84,14 @@
 int printf(char *fmt, ...);
 
 /*
+ * formatted printing to a given buffer, printing at most len chars,
+ * including the terminating character into dst.
+ */
+int snprintf(char *dst, size_t len, char *fmt, ...);
+
+/*
  * formatted printing to a given buffer.
  */
-uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...);
-
-uint32_t sprintf(char *dst, char *fmt, ...);
-
-/* others, non-POSIX compliant */
-
-void hexdump(const uint8_t *bin, uint32_t len);
-
-void aprintf(char *fmt, ...);
-
-void aprintf_flush(void);
+int sprintf(char *dst, char *fmt, ...);
 
 #endif

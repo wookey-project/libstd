@@ -1,7 +1,32 @@
-#include "api/print.h"
+/*
+ *
+ * Copyright 2018 The wookey project team <wookey@ssi.gouv.fr>
+ *   - Ryad     Benadjila
+ *   - Arnauld  Michelizza
+ *   - Mathieu  Renard
+ *   - Philippe Thierry
+ *   - Philippe Trebuchet
+ *
+ * This package is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * the Free Software Foundation; either version 2.1 of the License, or (at
+ * ur option) any later version.
+ *
+ * This package is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along
+ * with this package; if not, write to the Free Software Foundation, Inc., 51
+ * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+#include "api/stdio.h"
+#include "api/nostd.h"
 #include "api/string.h"
 #include "api/types.h"
 #include "api/syscall.h"
+#include "api/semaphore.h"
 #include "stream/stream_priv.h"
 #include "string/string_priv.h"
 
@@ -37,6 +62,24 @@
  * The ring buffer is local to this object file only.
  */
 static struct s_ring ring_buffer;
+
+/*
+ * This is the ring buffer mutex. This mutex is used
+ * in order to detect, in concurrent contexts (typically
+ * in main thread versus ISR threads) concurrent usage
+ * of the ring buffer, which may lead to invalid
+ * content.
+ *
+ * main-thread only API (printf()) is using a blocking
+ * mutex on the ring_buffer, which ensure that the
+ * ressource is released before executing the function
+ * content.
+ * ISR compatible functions (s[n]printf() and aprintf())
+ * use a trylock mutex mechanism, which can fail, to avoid
+ * any potential dead lock with the main thread as ISR are
+ * executed with a higher priority.
+ */
+static volatile uint32_t rb_lock = 0;
 
 /*
  * the ring buffer is a part of bss (not data, making it
@@ -625,9 +668,9 @@ err:
 }
 
 
-/***********************************************
- * libstream exported API implementation
- **********************************************/
+/*************************************************************
+ * libstream exported API implementation: POSIX compilant API
+ ************************************************************/
 
 /*
  * Standard printf API.
@@ -638,6 +681,8 @@ int printf(char *fmt, ...)
     int res = 0;
     va_list args;
 
+    /* locking the ring buffer, waiting if needed */
+    mutex_lock(&rb_lock);
     /*
      * if there is some asyncrhonous printf to pass to the kernel, do it
      * before execute the current printf command
@@ -647,29 +692,36 @@ int printf(char *fmt, ...)
     res = print(fmt, args);
     va_end(args);
     print_and_reset_buffer();
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
     return res;
 }
 
-/*
-** FIXME: printf and sprintf should lock ISR as aprintf may asynchronously
-** use the ring buffer. Other way: lock the ring buffer to avoid using
-** aprintf when printf or sprintf is currently being used, or using another
-** ring buffer
-**/
-uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...)
+int snprintf(char *dst, size_t len, char *fmt, ...)
 {
     va_list args;
-    uint32_t sizew = 0;
-    uint32_t to_copy;
+    size_t sizew = 0;
+    size_t to_copy;
 
+    /* sanitize */
+    if (!dst) {
+        return -1;
+    }
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. As we may be executed in ISR mode, we prefer to
+         * give up instead of waiting for the buffer to be released */
+        return -1;
+    }
     va_start(args, fmt);
     sizew = print(fmt, args);
     va_end(args);
     /* copy the string we have just written to the ring buffer
      * into the dst string
      */
-    if (sizew > len) {
-       to_copy = len;
+    if (sizew >= len) {
+       /* POSIX specify that len includes the terminating byte */
+       to_copy = len - 1;
     } else {
       to_copy = sizew;
     }
@@ -677,15 +729,32 @@ uint32_t snprintf(char *dst, uint16_t len, char *fmt, ...)
     dst[to_copy] = '\0';
     /* rewind ring buffer content we have just written */
     ring_buffer_rewind(sizew);
-    /* returning the number of written chars */
-    return to_copy;
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    /* returning the number of written chars, casted to int
+     * as defined by POSIX standard, to support negative return
+     * on error.
+     * We consider here that size_t is smaller enough to
+     * be casted into int without being truncated
+     */
+    return (int)to_copy;
 }
 
-uint32_t sprintf(char *dst, char *fmt, ...)
+int sprintf(char *dst, char *fmt, ...)
 {
     va_list args;
-    uint32_t sizew = 0;
+    size_t sizew = 0;
 
+    /* sanitize */
+    if (!dst) {
+        return -1;
+    }
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. As we may be executed in ISR mode, we prefer to
+         * give up instead of waiting for the buffer to be released */
+        return -1;
+    }
     va_start(args, fmt);
     sizew = print(fmt, args);
     va_end(args);
@@ -696,6 +765,56 @@ uint32_t sprintf(char *dst, char *fmt, ...)
     dst[sizew] = '\0';
     /* rewind ring buffer content we have just written */
     ring_buffer_rewind(sizew);
-    /* returning the number of written chars */
-    return sizew;
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    /* returning the number of written chars, casted to int
+     * as defined by POSIX standard, to support negative return
+     * on error.
+     * We consider here that size_t is smaller enough to
+     * be casted into int without being truncated
+     */
+    return (int)sizew;
 }
+
+/***********************************************************
+ * libstream exported API implementation: custom API
+ **********************************************************/
+
+
+/* asyncrhonous printf, for handlers */
+int aprintf(char *fmt, ...)
+{
+    int res = -1;
+    va_list args;
+
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. As we may be executed in ISR mode, we prefer to
+         * give up instead of waiting for the buffer to be released */
+        return res;
+    }
+    va_start(args, fmt);
+    res = print(fmt, args);
+    va_end(args);
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    return res;
+}
+
+int aprintf_flush(void)
+{
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. we prefer to give up instead of waiting for the
+         * buffer to be released */
+        return -1;
+    }
+    print_and_reset_buffer();
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    return 0;
+}
+
+
+
+
