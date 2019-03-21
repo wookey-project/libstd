@@ -682,7 +682,9 @@ int printf(char *fmt, ...)
     va_list args;
 
     /* locking the ring buffer, waiting if needed */
-    mutex_lock(&rb_lock);
+    if (!mutex_trylock(&rb_lock)) {
+        return -1;
+    }
     /*
      * if there is some asyncrhonous printf to pass to the kernel, do it
      * before execute the current printf command
