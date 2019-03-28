@@ -29,6 +29,7 @@ CFLAGS += -Ialloc/
 CFLAGS += -Istream/
 CFLAGS += -Istring/
 CFLAGS += -Iembed/
+CFLAGS += -Iarpa/
 
 LDFLAGS += -fno-builtin -nostdlib -nostartfiles
 LD_LIBS +=
@@ -45,6 +46,7 @@ SRC += $(wildcard $(SRC_DIR)/alloc/*.c)
 SRC += $(wildcard $(SRC_DIR)/stream/*.c)
 SRC += $(wildcard $(SRC_DIR)/string/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/*.c)
+SRC += $(wildcard $(SRC_DIR)/arpa/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.c)
 OBJ = $(patsubst %.c,$(APP_BUILD_DIR)/%.o,$(SRC))
 DEP = $(OBJ:.o=.d)
