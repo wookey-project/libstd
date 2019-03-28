@@ -69,6 +69,7 @@ typedef enum {
     MBED_ERROR_BUSY,
     MBED_ERROR_DENIED,
     MBED_ERROR_UNKNOWN,
+    MBED_ERROR_INVPARAM
 } mbed_error_t;
 
 #endif/*!TYPES_H_*/
