@@ -29,31 +29,49 @@
 #include "api/syscall.h"
 #include "api/random.h"
 
-int get_random(unsigned char *buf, uint16_t len)
+mbed_error_t get_random(unsigned char *buf, uint16_t len)
 {
     uint16_t i;
     uint8_t ret;
+    mbed_error_t err;
+
+    /*sanitize */
+    if (!buf) {
+        err = MBED_ERROR_INVPARAM;
+        goto error;
+    }
 
     /* First, set the buffer to zero */
     memset(buf, 0, len);
 
     /* Generate as much random as necessary */
-    for(i = 0; i < sizeof(uint32_t) * (len / sizeof(uint32_t)); i += sizeof(uint32_t)){
-        if((ret = sys_get_random((char*)(&(buf[i])), 4))){
-            printf("error while getting random ! ret=%d\n", ret);
-            goto err;
+    for(i = 0; i < sizeof(uint32_t) * (len / sizeof(uint32_t)); i += sizeof(uint32_t)) {
+        if((ret = sys_get_random((char*)(&(buf[i])), 4))) {
+            if (ret == SYS_E_DENIED) {
+                err = MBED_ERROR_DENIED;
+            }
+            if (ret == SYS_E_BUSY) {
+                err = MBED_ERROR_BUSY;
+            }
+            goto error;
         }
     }
-    if((len - i) > (int16_t)sizeof(uint32_t)){
-        /* We should not end here ... */
-        goto err;
+    if((len - i) > (int16_t)sizeof(uint32_t)) {
+        /* We should not end here, the buf len is not 32 bits multiple */
+        err = MBED_ERROR_INVPARAM;
+        goto error;
     }
     /* Handle the remaining bytes */
     if(i < len){
         uint32_t random;
-        if((ret = sys_get_random(((char*)&random), 4))){
-            printf("error while getting random ! ret=%d\n", ret);
-            goto err;
+        if((ret = sys_get_random(((char*)&random), 4))) {
+            if (ret == SYS_E_DENIED) {
+                err = MBED_ERROR_DENIED;
+            }
+            if (ret == SYS_E_BUSY) {
+                err = MBED_ERROR_BUSY;
+            }
+            goto error;
         }
         while(i < len){
             buf[i] = (random >> (8 * (len - i))) & 0xff;
@@ -61,7 +79,7 @@ int get_random(unsigned char *buf, uint16_t len)
         }
     }
 
-    return 0;
-err:
-    return -1;
+    return MBED_ERROR_NONE;
+error:
+    return err;
 }

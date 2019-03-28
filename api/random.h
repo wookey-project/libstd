@@ -26,6 +26,19 @@
 
 #include "api/types.h"
 
-int get_random(unsigned char *buf, uint16_t len);
+/**
+ * \fn get_random
+ * \brief load random content from the system entropy source into a buffer
+ *
+ * \param buf  the buffer in which the random values is to be stored
+ * \param len  the amount of random bytes requested
+ *
+ * \return MBED_ERROR_NONE if the RNG source fullfill the buffer, or:
+ *    MBED_ERROR_DENIED if the task is not authorized to request RNG source
+ *    MBED_ERROR_BUSY if the RNG source entropy is not ready
+ *    MBED_ERROR_INVPARAM if len is not 32bit aligned or the buffer is NULL.
+ *
+ */
+mbed_error_t  get_random(unsigned char *buf, uint16_t len);
 
 #endif
