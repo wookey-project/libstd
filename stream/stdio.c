@@ -778,6 +778,107 @@ int sprintf(char *dst, char *fmt, ...)
     return (int)sizew;
 }
 
+/*****************************************************************
+ * stdarg API
+ * using va_list instead of ...
+ ****************************************************************/
+
+int vprintf(char *fmt, va_list args)
+{
+    int res = 0;
+
+    /* locking the ring buffer, waiting if needed */
+    if (!mutex_trylock(&rb_lock)) {
+        return -1;
+    }
+    /*
+     * if there is some asyncrhonous printf to pass to the kernel, do it
+     * before execute the current printf command
+     */
+    print_and_reset_buffer();
+    res = print(fmt, args);
+    print_and_reset_buffer();
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    return res;
+}
+
+
+int vsnprintf(char *dst, size_t len, char *fmt, va_list args)
+{
+    size_t sizew = 0;
+    size_t to_copy;
+
+    /* sanitize */
+    if (!dst) {
+        return -1;
+    }
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. As we may be executed in ISR mode, we prefer to
+         * give up instead of waiting for the buffer to be released */
+        return -1;
+    }
+    sizew = print(fmt, args);
+    /* copy the string we have just written to the ring buffer
+     * into the dst string
+     */
+    if (sizew >= len) {
+       /* POSIX specify that len includes the terminating byte */
+       to_copy = len - 1;
+    } else {
+      to_copy = sizew;
+    }
+    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), to_copy);
+    dst[to_copy] = '\0';
+    /* rewind ring buffer content we have just written */
+    ring_buffer_rewind(sizew);
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    /* returning the number of written chars, casted to int
+     * as defined by POSIX standard, to support negative return
+     * on error.
+     * We consider here that size_t is smaller enough to
+     * be casted into int without being truncated
+     */
+    return (int)to_copy;
+}
+
+int vsprintf(char *dst, char *fmt, va_list args)
+{
+    size_t sizew = 0;
+
+    /* sanitize */
+    if (!dst) {
+        return -1;
+    }
+    if (!mutex_trylock(&rb_lock)) {
+        /* unable to lock the ring buffer, another context is currently
+         * using it. As we may be executed in ISR mode, we prefer to
+         * give up instead of waiting for the buffer to be released */
+        return -1;
+    }
+    sizew = print(fmt, args);
+    /* copy the string we have just written to the ring buffer
+     * into the dst string
+     */
+    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), sizew);
+    dst[sizew] = '\0';
+    /* rewind ring buffer content we have just written */
+    ring_buffer_rewind(sizew);
+    /* unlocking the ring buffer */
+    mutex_unlock(&rb_lock);
+    /* returning the number of written chars, casted to int
+     * as defined by POSIX standard, to support negative return
+     * on error.
+     * We consider here that size_t is smaller enough to
+     * be casted into int without being truncated
+     */
+    return (int)sizew;
+}
+
+
+
 /***********************************************************
  * libstream exported API implementation: custom API
  **********************************************************/

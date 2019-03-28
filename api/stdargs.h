@@ -21,11 +21,8 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef STDIO_H_
-#define STDIO_H_
-
-#include <stdarg.h>
-#include "api/types.h"
+#ifndef STDARGS_H_
+#define STDARGS_H_
 
 /*******************************************
  * Implementation of POSIX stdio
@@ -33,7 +30,7 @@
 
 
 /****************************************
- * printf() familly
+ * stdargs vprintf() familly
  *
  * This implementation of printf implement a subset
  * of the POSIX.1-2001 and C99 standard API (as we are in an embedded system)
@@ -74,24 +71,24 @@
  */
 
 /*
- * \brief formatted printing to the standard console.
+ * \brief formatted printing to the standard console using va_list.
  *
  * Printing is synchronous, including a syscall execution.
  *
  * \param fmt the formated string to print
  * \return the number of characters printed on success, -1 on failure
  */
-int printf(char *fmt, ...);
+int vprintf(char *fmt, va_list args);
 
 /*
- * formatted printing to a given buffer, printing at most len chars,
+ * formatted printing to a given buffer, printing at most len chars, using va_list,
  * including the terminating character into dst.
  */
-int snprintf(char *dst, size_t len, char *fmt, ...);
+int vsnprintf(char *dst, size_t len, char *fmt, va_list args);
 
 /*
- * formatted printing to a given buffer.
+ * formatted printing to a given buffer, using va_list.
  */
-int sprintf(char *dst, char *fmt, ...);
+int vsprintf(char *dst, char *fmt, va_list args);
 
-#endif/*!STDIO_H_*/
+#endif/*STDARGS_H_*/
