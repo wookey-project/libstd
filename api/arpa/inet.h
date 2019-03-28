@@ -31,6 +31,8 @@
  * can be used for network communication and any other byte-ordered protocol
  * (such as SCSI).
  *
+ * INFO: non standard POSIX compliant API such as htobe/htole... are not implemented
+ *
  */
 
 /*

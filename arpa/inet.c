@@ -3,6 +3,45 @@
 
 #include "api/arpa/inet.h"
 
+static inline uint32_t to_big32(uint32_t value)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
+        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
+#else
+    return value;
+#endif
+}
+
+static inline uint16_t to_big16(uint16_t value)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return (uint16_t) ((value & 0xff) << 8) | (uint16_t) ((value & 0xff00) >>
+                                                          8);
+#else
+    return value;
+#endif
+}
+
+static inline uint32_t to_little32(uint32_t value)
+{
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
+        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
+#else
+    return value;
+#endif
+}
+
+static inline uint16_t to_little16(uint16_t value)
+{
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return ((value & 0xff) << 8) | ((value & 0xff00) >> 8);
+#else
+    return value;
+#endif
+}
+
 /*
  * \brief host (variable) to network (MSB) byte order conversion for short integer
  *
@@ -17,7 +56,7 @@ uint16_t htons(uint16_t hostshort)
 {
     uint16_t netshort = hostshort;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    netshort = to_big32(hostshort);
+    netshort = to_big16(hostshort);
 #endif
     return netshort;
 }
@@ -55,7 +94,7 @@ uint16_t ntohs(uint16_t netshort)
 {
     uint16_t hostshort = netshort;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    to_little32(netshort);
+    to_little16(netshort);
 #endif
     return hostshort;
 }

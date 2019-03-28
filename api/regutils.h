@@ -66,15 +66,6 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value);
 __INLINE void set_reg_bits(volatile uint32_t * reg, uint32_t value);
 __INLINE void clear_reg_bits(volatile uint32_t * reg, uint32_t value);
 
-__INLINE uint32_t to_big32(uint32_t value);
-__INLINE uint16_t to_big16(uint16_t value);
-__INLINE uint32_t to_little32(uint32_t value);
-__INLINE uint16_t to_little16(uint16_t value);
-__INLINE uint32_t from_big32(uint32_t value);
-__INLINE uint16_t from_big16(uint16_t value);
-__INLINE uint32_t from_little32(uint32_t value);
-__INLINE uint16_t from_little16(uint16_t value);
-
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
 {
@@ -166,84 +157,6 @@ __INLINE void set_reg16_bits(volatile uint16_t * reg, uint16_t value)
 __INLINE void clear_reg_bits(volatile uint32_t * reg, uint32_t value)
 {
     *reg &= (uint32_t) ~ (value);
-}
-
-__INLINE uint32_t to_big32(uint32_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
-        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
-#else
-    return value;
-#endif
-}
-
-__INLINE uint16_t to_big16(uint16_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (uint16_t) ((value & 0xff) << 8) | (uint16_t) ((value & 0xff00) >>
-                                                          8);
-#else
-    return value;
-#endif
-}
-
-__INLINE uint32_t to_little32(uint32_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
-        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
-#else
-    return value;
-#endif
-}
-
-__INLINE uint16_t to_little16(uint16_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    return ((value & 0xff) << 8) | ((value & 0xff00) >> 8);
-#else
-    return value;
-#endif
-}
-
-__INLINE uint32_t from_big32(uint32_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    return value;
-#else
-    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
-        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
-#endif
-}
-
-__INLINE uint16_t from_big16(uint16_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    return value;
-#else
-    return (uint16_t) ((value & 0xff) << 8) | (uint16_t) ((value & 0xff00) >>
-                                                          8);
-#endif
-}
-
-__INLINE uint32_t from_little32(uint32_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return value;
-#else
-    return ((value & 0xff) << 24) | ((value & 0xff00) << 8)
-        | ((value & 0xff0000) >> 8) | ((value & 0xff000000) >> 24);
-#endif
-}
-
-__INLINE uint16_t from_little16(uint16_t value)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return value;
-#else
-    return ((value & 0xff) << 8) | ((value & 0xff00) >> 8);
-#endif
 }
 
 #endif                          /*!REGUTILS_H_ */
