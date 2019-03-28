@@ -81,17 +81,17 @@
  * \param fmt the formated string to print
  * \return the number of characters printed on success, -1 on failure
  */
-int printf(char *fmt, ...);
+int printf(const char *fmt, ...);
 
 /*
  * formatted printing to a given buffer, printing at most len chars,
  * including the terminating character into dst.
  */
-int snprintf(char *dst, size_t len, char *fmt, ...);
+int snprintf(char *dst, size_t len, const char *fmt, ...);
 
 /*
  * formatted printing to a given buffer.
  */
-int sprintf(char *dst, char *fmt, ...);
+int sprintf(char *dst, const char *fmt, ...);
 
 #endif/*!STDIO_H_*/

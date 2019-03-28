@@ -91,7 +91,7 @@ int hexdump(const uint8_t *bin, uint32_t len);
 /*
  * asynchronous printf implementation
  */
-int aprintf(char *fmt, ...);
+int aprintf(const char *fmt, ...);
 
 /*
  * flushing the ring buffer content that pervious asyncrhonous printf may

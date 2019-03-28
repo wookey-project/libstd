@@ -78,17 +78,17 @@
  * \param fmt the formated string to print
  * \return the number of characters printed on success, -1 on failure
  */
-int vprintf(char *fmt, va_list args);
+int vprintf(const char *fmt, va_list args);
 
 /*
  * formatted printing to a given buffer, printing at most len chars, using va_list,
  * including the terminating character into dst.
  */
-int vsnprintf(char *dst, size_t len, char *fmt, va_list args);
+int vsnprintf(char *dst, size_t len, const char *fmt, va_list args);
 
 /*
  * formatted printing to a given buffer, using va_list.
  */
-int vsprintf(char *dst, char *fmt, va_list args);
+int vsprintf(char *dst, const char *fmt, va_list args);
 
 #endif/*STDARGS_H_*/

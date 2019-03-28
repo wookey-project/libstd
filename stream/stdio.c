@@ -646,7 +646,7 @@ err:
  * Print a given fmt string, considering variable arguments given in args.
  * This function *does not* flush the ring buffer, but only fullfill it.
  */
-int print(char *fmt, va_list args)
+int print(const char *fmt, va_list args)
 {
     int i = 0;
     uint8_t consumed = 0;
@@ -676,7 +676,7 @@ err:
  * Standard printf API.
  *
  */
-int printf(char *fmt, ...)
+int printf(const char *fmt, ...)
 {
     int res = 0;
     va_list args;
@@ -699,7 +699,7 @@ int printf(char *fmt, ...)
     return res;
 }
 
-int snprintf(char *dst, size_t len, char *fmt, ...)
+int snprintf(char *dst, size_t len, const char *fmt, ...)
 {
     va_list args;
     size_t sizew = 0;
@@ -742,7 +742,7 @@ int snprintf(char *dst, size_t len, char *fmt, ...)
     return (int)to_copy;
 }
 
-int sprintf(char *dst, char *fmt, ...)
+int sprintf(char *dst, const char *fmt, ...)
 {
     va_list args;
     size_t sizew = 0;
@@ -783,7 +783,7 @@ int sprintf(char *dst, char *fmt, ...)
  * using va_list instead of ...
  ****************************************************************/
 
-int vprintf(char *fmt, va_list args)
+int vprintf(const char *fmt, va_list args)
 {
     int res = 0;
 
@@ -804,7 +804,7 @@ int vprintf(char *fmt, va_list args)
 }
 
 
-int vsnprintf(char *dst, size_t len, char *fmt, va_list args)
+int vsnprintf(char *dst, size_t len, const char *fmt, va_list args)
 {
     size_t sizew = 0;
     size_t to_copy;
@@ -844,7 +844,7 @@ int vsnprintf(char *dst, size_t len, char *fmt, va_list args)
     return (int)to_copy;
 }
 
-int vsprintf(char *dst, char *fmt, va_list args)
+int vsprintf(char *dst, const char *fmt, va_list args)
 {
     size_t sizew = 0;
 
@@ -885,7 +885,7 @@ int vsprintf(char *dst, char *fmt, va_list args)
 
 
 /* asyncrhonous printf, for handlers */
-int aprintf(char *fmt, ...)
+int aprintf(const char *fmt, ...)
 {
     int res = -1;
     va_list args;
