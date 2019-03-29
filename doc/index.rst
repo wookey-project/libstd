@@ -39,7 +39,6 @@ Each component is described bellow.
 
 .. toctree::
   :maxdepth: 1
-  :hidden:
 
   EwoK libstd's libstring <libstring>
   EwoK libstd's libembed <libembed>
