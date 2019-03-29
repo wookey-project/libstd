@@ -128,32 +128,39 @@ mbed_error_t queue_next_element(queue_t *q, void **next)
 
 mbed_error_t queue_dequeue(queue_t *q, void **data)
 {
+    mbed_error_t ret = MBED_ERROR_NONE;
     if (!q || !data) {
-        return MBED_ERROR_INVPARAM;
+        ret = MBED_ERROR_INVPARAM;
+        goto early_error;
     }
 
     if (!mutex_trylock(&q->lock)) {
-        return MBED_ERROR_BUSY;
+        ret = MBED_ERROR_BUSY;
+        goto early_error;
     }
     if (q->size == 0) {
         /* in this very case, q->tail is null */
-        mutex_unlock(&q->lock);
-        return MBED_ERROR_NOSTORAGE;
+        ret = MBED_ERROR_NOSTORAGE;
+        goto nostorage;
     }
 
 	struct node *last = q->tail;
 	*data = last->data;
 
+    if (!*data) {
+       ret = MBED_ERROR_NOSTORAGE;
+    }
+
 	if(last->prev != NULL){
 		last->prev->next = NULL;
 	}
+
 	q->tail = last->prev;
 
 	if (last == q->head){
 		q->head = NULL;
 	}
 	q->size--;
-    mutex_unlock(&q->lock);
 
 	if (wfree((void**)&last) != 0) {
 #if QUEUE_DEBUG
@@ -161,7 +168,11 @@ mbed_error_t queue_dequeue(queue_t *q, void **data)
         aprintf("free failed with %x\n", ret);
 #endif
     }
-	return MBED_ERROR_NONE;
+
+nostorage:
+    mutex_unlock(&q->lock);
+early_error:
+	return ret;
 }
 
 bool queue_is_empty(queue_t *q)
