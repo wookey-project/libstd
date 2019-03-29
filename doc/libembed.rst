@@ -1,6 +1,12 @@
 Libstd libembed API
 -------------------
 
+Data queuing and enqueuing API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: functions/queue_create.rst
+   :start-line: 4
+
 Semaphore API
 ^^^^^^^^^^^^^
 

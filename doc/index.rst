@@ -44,5 +44,10 @@ Each component is described bellow.
   EwoK libstd's libembed <libembed>
   EwoK libstd's libstream <libstream>
   EwoK libstd's libarpa <libarpa>
-  EwoK libstd API FAQ <faq>
+
+libstd FAQ
+----------
+
+.. include:: faq.rst
+   :start-line: 4
 
