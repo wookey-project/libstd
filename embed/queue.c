@@ -78,7 +78,9 @@ mbed_error_t queue_enqueue(queue_t *q, void *data)
 
 
 	struct node *n;
-    if(wmalloc((void**)&n, sizeof(struct node), ALLOC_NORMAL) != 0) {
+    uint32_t ret;
+    if((ret = wmalloc((void**)&n, sizeof(struct node), ALLOC_NORMAL)) != 0) {
+        aprintf("[ISR] Error in malloc: %d\n", ret);
         return MBED_ERROR_NOMEM;
     }
 
@@ -196,4 +198,17 @@ mbed_error_t queue_available_space(queue_t *q, uint32_t *space)
 
     mutex_unlock(&q->lock);
 	return MBED_ERROR_NONE;
+}
+
+mbed_error_t queue_dump(queue_t *q)
+{
+    if (!q) {
+        return MBED_ERROR_INVPARAM;
+    }
+    printf("q:head %08x\n", q->head);
+    printf("q:tail %08x\n", q->head);
+    printf("q:max  %dx\n", q->max);
+    printf("q:size %dx\n", q->size);
+    printf("q:lock %dx\n", q->lock);
+    return MBED_ERROR_NONE;
 }

@@ -112,4 +112,7 @@ bool queue_is_empty(queue_t *q);
  */
 mbed_error_t queue_available_space(queue_t *q, uint32_t *space);
 
+
+mbed_error_t queue_dump(queue_t *q);
+
 #endif /* QUEUE_H */
