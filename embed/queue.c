@@ -69,24 +69,23 @@ invparam:
 
 mbed_error_t queue_enqueue(queue_t *q, void *data)
 {
+	struct node *n;
+    uint32_t ret;
+
     if (!q || !data) {
         return MBED_ERROR_INVPARAM;
     }
+
     if (q->size == q->max) {
         return MBED_ERROR_NOMEM;
     }
 
-
-	struct node *n;
-    uint32_t ret;
     if((ret = wmalloc((void**)&n, sizeof(struct node), ALLOC_NORMAL)) != 0) {
         aprintf("[ISR] Error in malloc: %d\n", ret);
         return MBED_ERROR_NOMEM;
     }
 
-    /* from now on, we manipulate the queue, we lock it to stay
-     * thread-safe
-     */
+    /* We manipulate the queue: we need to lock it to stay thread-safe */
     if (!mutex_trylock(&q->lock)) {
         return MBED_ERROR_BUSY;
     }
@@ -102,6 +101,7 @@ mbed_error_t queue_enqueue(queue_t *q, void *data)
 		q->tail = q->head;
 	}
 	q->size++;
+
     mutex_unlock(&q->lock);
 
 	return MBED_ERROR_NONE;
