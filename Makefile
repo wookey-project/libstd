@@ -61,7 +61,7 @@ TODEL_CLEAN += $(ARCH_OBJ) $(OBJ)
 # targets
 TODEL_DISTCLEAN += $(APP_BUILD_DIR)
 
-.PHONY: app
+.PHONY: app doc
 
 default: all
 
@@ -69,7 +69,7 @@ all: $(APP_BUILD_DIR) lib
 
 
 doc:
-	$(Q)$(MAKE) -C doc html
+	$(Q)$(MAKE) BUILDDIR=../$(APP_BUILD_DIR)/doc  -C doc html latexpdf
 
 show:
 	@echo
