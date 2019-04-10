@@ -24,6 +24,11 @@
 #ifndef M4_INTRINSIC
 #define M4_INTRINSIC
 
+/*
+ * ARMCC provides the ARM intrinsics
+ */
+#ifndef __ARMCC_VERSION
+
 #include "types.h"
 
 /*
@@ -39,5 +44,7 @@ void     __ISB(void);
 uint32_t __STREXW(uint32_t val, volatile uint32_t *addr);
 uint32_t __STREXH(uint16_t val, volatile uint32_t *addr);
 uint32_t __STREXB(uint8_t  val, volatile uint32_t *addr);
+
+#endif/*ARMCC*/
 
 #endif/*!M4_INTRINSIC*/
