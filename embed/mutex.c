@@ -59,9 +59,14 @@ void mutex_lock(volatile uint32_t* mutex)
 
 void mutex_unlock(volatile uint32_t* mutex)
 {
-    /* as it is a mutex we unlock, we should be the lonly user of the
-     * semaphore varibale. If the application try to access the
-     * variable directly (without the mutex directive... we consider
-     * that it is its own problem... */
-    core_semaphore_release(mutex);
+    bool ret;
+
+    do {
+        ret = core_semaphore_release(mutex);
+    } while (ret == false);
+}
+
+bool mutex_tryunlock(volatile uint32_t* mutex)
+{
+    return core_semaphore_release(mutex);
 }

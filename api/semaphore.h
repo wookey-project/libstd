@@ -42,4 +42,6 @@ void mutex_lock(volatile uint32_t* mutex);
 
 void mutex_unlock(volatile uint32_t* mutex);
 
+bool mutex_tryunlock(volatile uint32_t* mutex);
+
 #endif
