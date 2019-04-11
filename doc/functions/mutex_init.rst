@@ -21,9 +21,14 @@ The mutex API respects the following prototypes::
 
    void mutex_lock(volatile uint32_t *mutex);
 
-   bool mutex_release(uint32_t *mutex);
+   bool mutex_tryunlock(uint32_t *mutex);
 
-All mutex API but the mutex_lock() functions are non-blocking functions. mutex_lock() block the caller until the mutex is free.
+   void mutex_unlock(uint32_t *mutex);
+
+All mutex API but the mutex_lock() and mutex_unlock() functions are non-blocking functions. mutex_lock() and mutex_unlock() block the caller until the mutex is free to be acceded exclusively.
+
+.. danger::
+   Exclusive store may fail on ARM systems, even when releasing a mutex. This behavior may happen when an exception arrise during the execution of the overall __STREX intrinsic. Retrying to unlock just after should be enough is nearly all the times
 
 It is possible to use multiple mutexes in the same time.
 
