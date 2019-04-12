@@ -278,9 +278,9 @@ uint32_t ring_buffer_export(char *dst, uint32_t len)
       return 0;
     }
     if (ring_buffer.end >= len) {
-        memcpy(dst, &(ring_buffer.buf[ring_buffer.end - len]), len);
-        memset(&(ring_buffer.buf[ring_buffer.end - len]), 0x0, len);
-        ring_buffer.end -= len;
+        memcpy(dst, &(ring_buffer.buf[ring_buffer.end - len - 1]), len);
+        memset(&(ring_buffer.buf[ring_buffer.end - len - 1]), 0x0, len);
+        ring_buffer.end -= (len + 1);
     } else {
         uint32_t last_chunk = ring_buffer.end;
         uint32_t first_chunk = BUF_MAX - len + last_chunk;
