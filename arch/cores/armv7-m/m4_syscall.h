@@ -2,7 +2,7 @@
 #define M4_SYSCALL_H_
 
 #include "api/types.h"
-#include "kernel/src/exported/syscalls.h"
+#include "kernel/src/C/exported/syscalls.h"
 
 /**
 ** \private
