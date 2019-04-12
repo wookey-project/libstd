@@ -267,6 +267,11 @@ uint32_t ring_buffer_rewind(uint32_t len)
     return len;
 }
 
+/*
+ * Here we 'rewind' the ring buffer, as we use it as a tmp buffer without knowning
+ * if there is other data that need to be printed in it. As a consequence, we can't
+ * use the ring_buffer.start field.
+ */
 uint32_t ring_buffer_export(char *dst, uint32_t len)
 {
     if (len >= BUF_MAX) {
