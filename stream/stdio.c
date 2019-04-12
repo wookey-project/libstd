@@ -267,6 +267,27 @@ uint32_t ring_buffer_rewind(uint32_t len)
     return len;
 }
 
+uint32_t ring_buffer_export(char *dst, uint32_t len)
+{
+    if (len >= BUF_MAX) {
+      return 0;
+    }
+    if (ring_buffer.end >= len) {
+        memcpy(dst, &(ring_buffer.buf[ring_buffer.end - len]), len);
+        memset(&(ring_buffer.buf[ring_buffer.end - len]), 0x0, len);
+        ring_buffer.end -= len;
+    } else {
+        uint32_t last_chunk = ring_buffer.end;
+        uint32_t first_chunk = BUF_MAX - len + last_chunk;
+        memcpy(dst, &(ring_buffer.buf[first_chunk]), len - last_chunk);
+        memset(&(ring_buffer.buf[first_chunk]), 0x0, len - last_chunk);
+        memcpy(&(dst[len - last_chunk]), ring_buffer.buf, last_chunk);
+        memset(ring_buffer.buf, 0x0, last_chunk);
+        ring_buffer.end = first_chunk;
+    }
+    return len;
+}
+
 
 /*********************************************
  * other, not ring-buffer associated local utility functions
@@ -658,6 +679,7 @@ int print(const char *fmt, va_list args)
                  goto err;
              }
              i += consumed;
+             consumed = 0;
         } else {
             ring_buffer_write_char(fmt[i++]);
         }
@@ -727,10 +749,9 @@ int snprintf(char *dst, size_t len, const char *fmt, ...)
     } else {
       to_copy = sizew;
     }
-    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), to_copy);
-    dst[to_copy] = '\0';
-    /* rewind ring buffer content we have just written */
-    ring_buffer_rewind(sizew);
+    /* export and rewind ring buffer content we have just written */
+    ring_buffer_export(dst, sizew);
+    dst[sizew] = '\0';
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
@@ -760,13 +781,9 @@ int sprintf(char *dst, const char *fmt, ...)
     va_start(args, fmt);
     sizew = print(fmt, args);
     va_end(args);
-    /* copy the string we have just written to the ring buffer
-     * into the dst string
-     */
-    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), sizew);
+    /* export and rewind ring buffer content we have just written */
+    ring_buffer_export(dst, sizew);
     dst[sizew] = '\0';
-    /* rewind ring buffer content we have just written */
-    ring_buffer_rewind(sizew);
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
@@ -829,10 +846,9 @@ int vsnprintf(char *dst, size_t len, const char *fmt, va_list args)
     } else {
       to_copy = sizew;
     }
-    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), to_copy);
-    dst[to_copy] = '\0';
     /* rewind ring buffer content we have just written */
-    ring_buffer_rewind(sizew);
+    ring_buffer_export(dst, sizew);
+    dst[sizew] = '\0';
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
@@ -862,10 +878,9 @@ int vsprintf(char *dst, const char *fmt, va_list args)
     /* copy the string we have just written to the ring buffer
      * into the dst string
      */
-    memcpy(dst, &(ring_buffer.buf[ring_buffer.end - sizew]), sizew);
-    dst[sizew] = '\0';
     /* rewind ring buffer content we have just written */
-    ring_buffer_rewind(sizew);
+    ring_buffer_export(dst, sizew);
+    dst[sizew] = '\0';
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
