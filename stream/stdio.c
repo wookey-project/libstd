@@ -223,7 +223,7 @@ void print_and_reset_buffer(void)
         sys_log(ring_buffer.end - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
     } else if (ring_buffer.end < ring_buffer.start) {
-        sys_log(BUF_SIZE - ring_buffer.start,
+        sys_log(BUF_MAX - ring_buffer.start,
                 &(ring_buffer.buf[ring_buffer.start]));
         sys_log(ring_buffer.end, &(ring_buffer.buf[0]));
     }
@@ -234,9 +234,7 @@ void print_and_reset_buffer(void)
     ring_buffer.start = ring_buffer.end;
     ring_buffer.full = false;
 
-    for (uint32_t i = 0; i < BUF_MAX; i++) {
-        ring_buffer.buf[i] = '\0';
-    }
+    memset(ring_buffer.buf, 0x0, BUF_MAX);
 }
 
 /*
@@ -246,9 +244,20 @@ void print_and_reset_buffer(void)
  */
 uint32_t ring_buffer_rewind(uint32_t len)
 {
+    /* sanitizing len */
     if (len >= BUF_MAX) {
       return 0;
     }
+    if (ring_buffer.end > ring_buffer.start) {
+        if (len > ring_buffer.end - ring_buffer.start) {
+            return 0;
+        }
+    } else if (ring_buffer.start > ring_buffer.end) {
+        if (len > ((BUF_MAX - ring_buffer.start) + (ring_buffer.end))) {
+            return 0;
+        }
+    }
+
     if (ring_buffer.end >= len) {
         for (uint16_t i = ring_buffer.end - len; i < ring_buffer.end; i++) {
             ring_buffer.buf[i] = '\0';
@@ -274,13 +283,13 @@ uint32_t ring_buffer_rewind(uint32_t len)
  */
 uint32_t ring_buffer_export(char *dst, uint32_t len)
 {
-    if (len >= BUF_MAX) {
+    if (len >= BUF_MAX || !dst) {
       return 0;
     }
     if (ring_buffer.end >= len) {
-        memcpy(dst, &(ring_buffer.buf[ring_buffer.end - len - 1]), len);
-        memset(&(ring_buffer.buf[ring_buffer.end - len - 1]), 0x0, len);
-        ring_buffer.end -= (len + 1);
+        memcpy(dst, &(ring_buffer.buf[ring_buffer.end - len]), len);
+        memset(&(ring_buffer.buf[ring_buffer.end - len]), 0x0, len);
+        ring_buffer.end -= len;
     } else {
         uint32_t last_chunk = ring_buffer.end;
         uint32_t first_chunk = BUF_MAX - len + last_chunk;
@@ -290,6 +299,7 @@ uint32_t ring_buffer_export(char *dst, uint32_t len)
         memset(ring_buffer.buf, 0x0, last_chunk);
         ring_buffer.end = first_chunk;
     }
+    dst[len] = '\0';
     return len;
 }
 
@@ -335,6 +345,7 @@ typedef struct {
     fs_num_mode_t  numeric_mode;
     bool           started;
     uint8_t        consumed;
+    uint32_t       strlen;
 } fs_properties_t;
 
 
@@ -348,7 +359,7 @@ typedef struct {
  * by the format string itself, and return 0 if the format string has been
  * correctly parsed, or 1 if the format string parsing failed.
  */
-static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_t *consumed)
+static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_t *consumed, uint32_t *out_str_len)
 {
     fs_properties_t fs_prop = {
         .attr_0len     = false,
@@ -356,7 +367,8 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
         .size          = 0,
         .numeric_mode  = FS_NUM_DECIMAL, /*default */
         .started       = false,
-        .consumed      = 0
+        .consumed      = 0,
+        .strlen        = 0
     };
 
     /*
@@ -380,6 +392,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 } else  if (fs_prop.consumed == 1) {
                     /* detecting '%' just after '%' */
                     ring_buffer_write_char('%');
+                    fs_prop.strlen++;
                     /* => end of format string */
                     goto end;
                 } else {
@@ -429,10 +442,12 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
                 ring_buffer_write_number(val, 10);
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -466,6 +481,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
@@ -474,6 +490,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 } else {
                     ring_buffer_write_number(llval, 10);
                 }
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -507,6 +524,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
@@ -515,6 +533,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 } else {
                     ring_buffer_write_number(uc_val, 10);
                 }
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -534,10 +553,12 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
                 ring_buffer_write_number(val, 10);
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -555,9 +576,11 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 ring_buffer_write_string("0x", 2);
                 for (uint32_t i = len; i < fs_prop.size; ++i) {
                     ring_buffer_write_char('0');
+                    fs_prop.strlen++;
                 }
                 /* now we can print the number in argument */
                 ring_buffer_write_number(val, 16);
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -578,10 +601,12 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
                 ring_buffer_write_number(val, 16);
+                fs_prop.strlen += len;
                 /* => end of format string */
                 goto end;
             }
@@ -601,10 +626,12 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                      * the desired size */
                     for (uint32_t i = len; i < fs_prop.size; ++i) {
                         ring_buffer_write_char('0');
+                        fs_prop.strlen++;
                     }
                 }
                 /* now we can print the number in argument */
                 ring_buffer_write_number(val, 8);
+                fs_prop.strlen += len;
 
                 /* => end of format string */
                 goto end;
@@ -624,6 +651,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 char *str = va_arg(*args, char*);
                 /* now we can print the number in argument */
                 ring_buffer_write_string(str, strlen(str));
+                fs_prop.strlen += strlen(str);
 
                 /* => end of format string */
                 goto end;
@@ -660,10 +688,12 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
         fs_prop.consumed++;
     } while (fmt[fs_prop.consumed]);
 end:
+    *out_str_len += fs_prop.strlen;
     *consumed = fs_prop.consumed + 1; /* consumed is starting with 0 */
     return 0;
 err:
-    *consumed = 0;
+    *out_str_len += fs_prop.strlen;
+    *consumed = fs_prop.consumed + 1; /* consumed is starting with 0 */
     return 1;
 }
 
@@ -676,20 +706,22 @@ int print(const char *fmt, va_list args)
 {
     int i = 0;
     uint8_t consumed = 0;
+    uint32_t out_str_s = 0;
 
     while (fmt[i]) {
         if (fmt[i] == '%') {
-             if (print_handle_format_string(&(fmt[i]), &args, &consumed) != 0) {
+             if (print_handle_format_string(&(fmt[i]), &args, &consumed, &out_str_s)) {
                  /* the string format parsing has failed ! */
                  goto err;
              }
              i += consumed;
              consumed = 0;
         } else {
+            out_str_s++;
             ring_buffer_write_char(fmt[i++]);
         }
     }
-    return i;
+    return out_str_s;
 err:
     return -1;
 }

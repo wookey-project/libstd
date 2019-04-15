@@ -27,14 +27,13 @@
 #include <stdarg.h>
 #include "api/types.h"
 
-#define BUF_SIZE	512
-#define BUF_MAX		(BUF_SIZE - 1)
+#define BUF_MAX	512
 
 struct s_ring {
     uint32_t start;
     uint32_t end;
     bool     full;
-    char buf[BUF_SIZE];
+    char buf[BUF_MAX];
 };
 
 void init_ring_buffer(void);
