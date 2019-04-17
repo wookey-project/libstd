@@ -1,6 +1,6 @@
-#include "api/syscall.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
+#include "libc/syscall.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
 #include "stream/stream_priv.h"
 
 /* Global variable holding the stack canary value */

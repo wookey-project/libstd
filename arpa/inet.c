@@ -21,10 +21,10 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/types.h"
-#include "api/regutils.h"
+#include "libc/types.h"
+#include "libc/regutils.h"
 
-#include "api/arpa/inet.h"
+#include "libc/arpa/inet.h"
 
 static inline uint32_t to_big32(uint32_t value)
 {

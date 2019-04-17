@@ -27,7 +27,7 @@
 #include "autoconf.h"
 
 #ifdef CONFIG_ARCH_ARMV7M
-# include "arch/cores/armv7-m/types.h"
+# include "libc/arch/cores/armv7-m/types.h"
 #else
 # error "architecture not yet supported"
 #endif

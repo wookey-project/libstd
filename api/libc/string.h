@@ -33,7 +33,7 @@
  * SVr4 and 4.3BSD.
  */
 
-#include "api/types.h"
+#include "libc/types.h"
 
 /*****************************************
  *  error handling helpers

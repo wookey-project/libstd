@@ -1,3 +1,11 @@
+config USR_LIB_STD
+  bool  "EwoK standard libc library interface"
+  default y
+  ---help---
+  Support for basic libc primitves and various embedded
+  devices specific API over EwoK kernel.
+
+
 # no specific config for libstd by now
 menu "Libstd configuration"
 

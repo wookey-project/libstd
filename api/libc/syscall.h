@@ -25,8 +25,8 @@
 #define SYSCALL_H
 
 #include "autoconf.h"
-#include "api/interrupt.h"
-#include "api/types.h"
+#include "libc/interrupt.h"
+#include "libc/types.h"
 #include "kernel/src/C/exported/syscalls.h"
 #include "kernel/src/C/exported/devices.h"
 #ifdef CONFIG_KERNEL_DMA_ENABLE

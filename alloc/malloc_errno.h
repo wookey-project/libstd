@@ -3,7 +3,7 @@
 
 #include "autoconf.h"
 
-#include "api/types.h"
+#include "libc/types.h"
 uint32_t malloc_errno;
 
 /* for EwoK */

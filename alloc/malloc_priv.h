@@ -7,11 +7,11 @@
 
 #include "malloc_priv.h"
 #include "malloc_errno.h"   /* Specific wmalloc errno values */
-#include "api/types.h"
-#include "api/malloc.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/semaphore.h"
+#include "libc/types.h"
+#include "libc/malloc.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/semaphore.h"
 
 
 /********************************************************************************/

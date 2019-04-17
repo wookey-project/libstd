@@ -21,9 +21,9 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "string.h"
-#include "api/stdio.h"
-#include "api/syscall.h"
+#include "libc/string.h"
+#include "libc/stdio.h"
+#include "libc/syscall.h"
 
 #define UNDEFINED_BEHAVIOR_INT_VALUE 42
 #define UNDEFINED_BEHAVIOR_STR_VALUE NULL

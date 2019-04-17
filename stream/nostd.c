@@ -21,11 +21,11 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
-#include "api/types.h"
-#include "api/syscall.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/string.h"
+#include "libc/types.h"
+#include "libc/syscall.h"
 #include "stream/stream_priv.h"
 #include "string/string_priv.h"
 

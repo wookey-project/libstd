@@ -21,37 +21,28 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef H_MALLOC
-#define H_MALLOC
+#ifndef LIBSTD_STDARG_H_
+#define LIBSTD_STDARG_H_
 
-#include "autoconf.h"
-#include "api/types.h"
+#define _STDARG_H
+#define _ANSI_STDARG_H_
 
-#ifdef CONFIG_STD_MALLOC
+/*
+ * ISO C Standard:  7.15  Variable arguments  <stdarg.h>
+ */
 
-
-/********************************************************************************/
-
-/* Block security options (values for flag) */
-
-#define ALLOC_NORMAL        (int) 0x00000000
-#define ALLOC_SENSITIVE     (int) 0xFFFFFFFF
-
-
-/* Function prototypes */
-
-int wmalloc_init(void);
-
-#if CONFIG_STD_MALLOC_SIZE_LEN == 16
-int wmalloc(void **ptr_to_alloc, const uint16_t len, const int flag);
-#elif CONFIG_STD_MALLOC_SIZE_LEN == 32
-int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag);
+#include "libc/types.h"
+/* va_list definition is needed */
+#ifndef __GNUC_VA_LIST
+#define __GNUC_VA_LIST
+typedef __builtin_va_list __gnuc_va_list;
 #endif
 
-int wfree(void **ptr_to_free);
+typedef __gnuc_va_list va_list;
+
+#define va_start(v,l)	__builtin_va_start(v,l)
+#define va_end(v)	__builtin_va_end(v)
+#define va_arg(v,l)	__builtin_va_arg(v,l)
 
 
-#endif
-
-#endif
-
+#endif/*LIBSTD_STDARG_H_*/

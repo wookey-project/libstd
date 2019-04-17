@@ -1,27 +1,39 @@
+###################################################################
+# About the library name and path
+###################################################################
+
+# library name, without extension
 LIB_NAME ?= libstd
 
+# project root directory, relative to app dir
 PROJ_FILES = ../../
+
+# library name, with extension
 LIB_FULL_NAME = $(LIB_NAME).a
 
-VERSION = 1
-#############################
-
+# SDK helper Makefiles inclusion
 -include $(PROJ_FILES)/Makefile.conf
 -include $(PROJ_FILES)/Makefile.gen
 
 # use an app-specific build dir
 APP_BUILD_DIR = $(BUILD_DIR)/libs/$(LIB_NAME)
 
-CFLAGS += $(LIBS_CFLAGS)
-CFLAGS += -ffreestanding
+###################################################################
+# About the compilation flags
+###################################################################
+
+
+CFLAGS := $(LIBS_CFLAGS)
 # this lib is special: some of its functions are called by the kernel and as such must NOT be
 # purged at strip time by the compiler.
 # This flag block any attempt to delete unused symbols from the object file as they may be
 # called from the kernel
+CFLAGS += -I. -Iarch/cores/$(CONFIG_ARCH) -MMD -MP
+# this is specific to libstd, as this lib hold the task entrypoints (do_startisr and do_starttask)
+# which whould be overriden by the -Wl,gc -ffunction-sections
 CFLAGS += -fno-function-sections
-CFLAGS += -I$(PROJ_FILES)/kernel/shared
-CFLAGS += -I$(PROJ_FILES)/include/generated -I. -Iarch/cores/$(CONFIG_ARCH) -I$(PROJ_FILES)
-CFLAGS += -MMD -MP
+
+# about local subdirs
 # libstd API
 CFLAGS += -Iapi/
 # libstd sublibs
@@ -31,15 +43,17 @@ CFLAGS += -Istring/
 CFLAGS += -Iembed/
 CFLAGS += -Iarpa/
 
-LDFLAGS += -fno-builtin -nostdlib -nostartfiles
-LD_LIBS +=
 
-BUILD_DIR ?= $(PROJ_FILE)build
+#############################################################
+# About library sources
+#############################################################
 
+# libstd has arch-specific sources
 ARCH_DIR := ./arch/cores/$(ARCH)
 ARCH_SRC = $(wildcard $(ARCH_DIR)/*.c)
 ARCH_OBJ = $(patsubst %.c,$(APP_BUILD_DIR)/%.o,$(ARCH_SRC))
 
+# ... and C sources
 SRC_DIR = .
 SRC = $(wildcard $(SRC_DIR)/*.c)
 SRC += $(wildcard $(SRC_DIR)/alloc/*.c)
@@ -48,6 +62,8 @@ SRC += $(wildcard $(SRC_DIR)/string/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/*.c)
 SRC += $(wildcard $(SRC_DIR)/arpa/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.c)
+
+
 OBJ = $(patsubst %.c,$(APP_BUILD_DIR)/%.o,$(SRC))
 DEP = $(OBJ:.o=.d)
 ASM_SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.s)
@@ -61,12 +77,15 @@ TODEL_CLEAN += $(ARCH_OBJ) $(OBJ)
 # targets
 TODEL_DISTCLEAN += $(APP_BUILD_DIR)
 
+##########################################################
+# generic targets of all libraries makefiles
+##########################################################
+
 .PHONY: app doc
 
 default: all
 
 all: $(APP_BUILD_DIR) lib
-
 
 doc:
 	$(Q)$(MAKE) BUILDDIR=../$(APP_BUILD_DIR)/doc  -C doc html latexpdf
@@ -87,9 +106,6 @@ show:
 
 lib: $(APP_BUILD_DIR)/$(LIB_FULL_NAME)
 
-#############################################################
-# build targets (driver, core, SoC, Board... and local)
-# App C sources files
 $(APP_BUILD_DIR)/%.o: %.c
 	$(call if_changed,cc_o_c)
 
@@ -109,5 +125,3 @@ $(APP_BUILD_DIR):
 	$(call cmd,mkdir)
 
 -include $(DEP)
--include $(DRVDEP)
--include $(TESTSDEP)

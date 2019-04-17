@@ -21,11 +21,11 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/queue.h"
+#include "libc/queue.h"
 
-#include "api/nostd.h"
-#include "api/stdio.h"
-#include "api/semaphore.h"
+#include "libc/nostd.h"
+#include "libc/stdio.h"
+#include "libc/semaphore.h"
 
 #define QUEUE_DEBUG 0
 

@@ -24,8 +24,8 @@
 #ifndef STDIO_H_
 #define STDIO_H_
 
-#include "api/stdarg.h"
-#include "api/types.h"
+#include "libc/stdarg.h"
+#include "libc/types.h"
 
 /*******************************************
  * Implementation of POSIX stdio

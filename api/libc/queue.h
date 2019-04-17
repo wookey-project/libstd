@@ -24,8 +24,8 @@
 #ifndef QUEUE_H
 # define QUEUE_H
 
-#include "api/types.h"
-#include "api/malloc.h"
+#include "libc/types.h"
+#include "libc/malloc.h"
 
 #define MAX_QUEUE_DEPTH 512
 

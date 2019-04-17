@@ -24,7 +24,7 @@
 #ifndef RANDOM_H_
 #define RANDOM_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 
 /**
  * \fn get_random

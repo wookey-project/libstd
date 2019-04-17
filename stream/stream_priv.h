@@ -25,7 +25,7 @@
 # define STREAM_PRIV_H_
 
 #include <stdarg.h>
-#include "api/types.h"
+#include "libc/types.h"
 
 #define BUF_MAX	512
 

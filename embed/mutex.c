@@ -21,14 +21,14 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/types.h"
+#include "libc/types.h"
 #include "autoconf.h"
 #ifdef CONFIG_ARCH_ARMV7M
 #include "arch/cores/armv7-m/m4-sync.h"
 #else
 #error "Unknown architecture"
 #endif
-#include "semaphore.h"
+#include "libc/semaphore.h"
 
 /*
  * The mutex is initialized with 1 (unlocked).

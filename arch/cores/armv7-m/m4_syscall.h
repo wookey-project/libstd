@@ -1,7 +1,7 @@
 #ifndef M4_SYSCALL_H_
 #define M4_SYSCALL_H_
 
-#include "api/types.h"
+#include "libc/types.h"
 #include "kernel/src/C/exported/syscalls.h"
 
 /**

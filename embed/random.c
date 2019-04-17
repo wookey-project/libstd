@@ -22,12 +22,12 @@
  *
  */
 /* Top header for AES */
-#include "api/types.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
-#include "api/syscall.h"
-#include "api/random.h"
+#include "libc/types.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/string.h"
+#include "libc/syscall.h"
+#include "libc/random.h"
 
 mbed_error_t get_random(unsigned char *buf, uint16_t len)
 {

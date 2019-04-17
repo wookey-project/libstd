@@ -24,7 +24,7 @@
 #ifndef M4_SYNC_H
 #define M4_SYNC_H
 
-#include "types.h"
+#include "libc/types.h"
 
 bool core_semaphore_trylock(volatile uint32_t* semaphore);
 

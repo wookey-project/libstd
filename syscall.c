@@ -21,8 +21,8 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#include "api/types.h"
-#include "api/syscall.h"
+#include "libc/types.h"
+#include "libc/syscall.h"
 #ifdef CONFIG_ARCH_ARMV7M
 #include "arch/cores/armv7-m/m4_syscall.h"
 #endif

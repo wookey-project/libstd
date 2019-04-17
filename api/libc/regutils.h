@@ -23,7 +23,7 @@
  */
 #ifndef REGUTILS_H_
 #define REGUTILS_H_
-#include "api/types.h"
+#include "libc/types.h"
 
 #define REG_ADDR(addr)                      ((volatile uint32_t *)(addr))
 #define REG_VALUE(reg, value, pos, mask)    ((reg)  |= (((value) << (pos)) & (mask)))

@@ -29,7 +29,7 @@
  */
 #ifndef __ARMCC_VERSION
 
-#include "types.h"
+#include "libc/types.h"
 
 /*
  * intrinsic functions of CMSIS, not implemented in GCC, are implemented here,
