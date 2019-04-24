@@ -202,6 +202,15 @@ static void ring_buffer_write_number(uint64_t value, uint8_t base)
 }
 
 
+static void ring_buffer_reset(void)
+{
+    ring_buffer.end = 0;
+    ring_buffer.start = ring_buffer.end;
+    ring_buffer.full = false;
+
+    memset(ring_buffer.buf, 0x0, BUF_MAX);
+}
+
 
 /*
  * Print the ring buffer content (if there is some), and reset its
@@ -230,11 +239,9 @@ void print_and_reset_buffer(void)
     /* reset the ring buffer flags now that the content has been
      * sent to the kernel I/O API
      */
-    ring_buffer.end = 0;
-    ring_buffer.start = ring_buffer.end;
-    ring_buffer.full = false;
+    ring_buffer_reset();
 
-    memset(ring_buffer.buf, 0x0, BUF_MAX);
+    return;
 }
 
 /*
@@ -702,7 +709,7 @@ err:
  * Print a given fmt string, considering variable arguments given in args.
  * This function *does not* flush the ring buffer, but only fullfill it.
  */
-int print(const char *fmt, va_list args)
+int print(const char *fmt, va_list args, size_t *sizew)
 {
     int i = 0;
     uint8_t consumed = 0;
@@ -721,8 +728,10 @@ int print(const char *fmt, va_list args)
             ring_buffer_write_char(fmt[i++]);
         }
     }
-    return out_str_s;
+    *sizew = out_str_s;
+    return 0;
 err:
+    *sizew = out_str_s;
     return -1;
 }
 
@@ -737,12 +746,13 @@ err:
  */
 int printf(const char *fmt, ...)
 {
-    int res = 0;
+    int res = -1;
     va_list args;
+    size_t len;
 
     /* locking the ring buffer, waiting if needed */
     if (!mutex_trylock(&rb_lock)) {
-        return -1;
+        goto err_init;
     }
     /*
      * if there is some asyncrhonous printf to pass to the kernel, do it
@@ -750,11 +760,18 @@ int printf(const char *fmt, ...)
      */
     print_and_reset_buffer();
     va_start(args, fmt);
-    res = print(fmt, args);
+    res = print(fmt, args, &len);
     va_end(args);
+    if (res == -1) {
+        ring_buffer_reset();
+        goto err;
+    }
+
     print_and_reset_buffer();
+err:
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
+err_init:
     return res;
 }
 
@@ -763,32 +780,41 @@ int snprintf(char *dst, size_t len, const char *fmt, ...)
     va_list args;
     size_t sizew = 0;
     size_t to_copy;
+    int res = -1;
 
     /* sanitize */
     if (!dst) {
-        return -1;
+        goto err_init;
     }
     if (!mutex_trylock(&rb_lock)) {
         /* unable to lock the ring buffer, another context is currently
          * using it. As we may be executed in ISR mode, we prefer to
          * give up instead of waiting for the buffer to be released */
-        return -1;
+        goto err_init;
     }
     va_start(args, fmt);
-    sizew = print(fmt, args);
+    res = print(fmt, args, &sizew);
     va_end(args);
+    /* if print fails, returns -1 */
+    if (res == -1) {
+        ring_buffer_rewind(sizew);
+        goto err;
+    }
     /* copy the string we have just written to the ring buffer
      * into the dst string
      */
     if (sizew >= len) {
        /* POSIX specify that len includes the terminating byte */
        to_copy = len - 1;
+       /* if there is more in the buffer that dst can hold, the
+        * string must be trunkated in the ring buffer first */
+       ring_buffer_rewind(sizew - len);
     } else {
       to_copy = sizew;
     }
     /* export and rewind ring buffer content we have just written */
-    ring_buffer_export(dst, sizew);
-    dst[sizew] = '\0';
+    ring_buffer_export(dst, to_copy);
+    dst[to_copy] = '\0';
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
@@ -798,26 +824,36 @@ int snprintf(char *dst, size_t len, const char *fmt, ...)
      * be casted into int without being truncated
      */
     return (int)to_copy;
+err:
+    mutex_unlock(&rb_lock);
+err_init:
+    return res;
 }
 
 int sprintf(char *dst, const char *fmt, ...)
 {
     va_list args;
     size_t sizew = 0;
+    int res = -1;
 
     /* sanitize */
     if (!dst) {
-        return -1;
+        goto err_init;
     }
     if (!mutex_trylock(&rb_lock)) {
         /* unable to lock the ring buffer, another context is currently
          * using it. As we may be executed in ISR mode, we prefer to
          * give up instead of waiting for the buffer to be released */
-        return -1;
+        goto err_init;
     }
     va_start(args, fmt);
-    sizew = print(fmt, args);
+    res = print(fmt, args, &sizew);
     va_end(args);
+    /* if print fails, returns -1 */
+    if (res == -1) {
+        ring_buffer_rewind(sizew);
+        goto err;
+    }
     /* export and rewind ring buffer content we have just written */
     ring_buffer_export(dst, sizew);
     dst[sizew] = '\0';
@@ -830,6 +866,10 @@ int sprintf(char *dst, const char *fmt, ...)
      * be casted into int without being truncated
      */
     return (int)sizew;
+err:
+    mutex_unlock(&rb_lock);
+err_init:
+    return res;
 }
 
 /*****************************************************************
@@ -839,21 +879,32 @@ int sprintf(char *dst, const char *fmt, ...)
 
 int vprintf(const char *fmt, va_list args)
 {
-    int res = 0;
+    int res = -1;
+    size_t len;
+
+    if (!fmt) {
+        goto err_init;
+    }
 
     /* locking the ring buffer, waiting if needed */
     if (!mutex_trylock(&rb_lock)) {
-        return -1;
+        goto err_init;
     }
     /*
      * if there is some asyncrhonous printf to pass to the kernel, do it
      * before execute the current printf command
      */
     print_and_reset_buffer();
-    res = print(fmt, args);
-    print_and_reset_buffer();
+    res = print(fmt, args, &len);
     /* unlocking the ring buffer */
+    if (res == -1) {
+        ring_buffer_rewind(len);
+        goto err;
+    }
+    print_and_reset_buffer();
+err:
     mutex_unlock(&rb_lock);
+err_init:
     return res;
 }
 
@@ -862,30 +913,37 @@ int vsnprintf(char *dst, size_t len, const char *fmt, va_list args)
 {
     size_t sizew = 0;
     size_t to_copy;
+    int ret = -1;
 
     /* sanitize */
-    if (!dst) {
-        return -1;
+    if (!dst || !fmt) {
+        goto err_init;
     }
     if (!mutex_trylock(&rb_lock)) {
         /* unable to lock the ring buffer, another context is currently
          * using it. As we may be executed in ISR mode, we prefer to
          * give up instead of waiting for the buffer to be released */
-        return -1;
+        goto err_init;
     }
-    sizew = print(fmt, args);
+    ret = print(fmt, args, &sizew);
     /* copy the string we have just written to the ring buffer
      * into the dst string
      */
+    if (ret == -1) {
+        ring_buffer_rewind(sizew);
+        goto err;
+    }
     if (sizew >= len) {
        /* POSIX specify that len includes the terminating byte */
        to_copy = len - 1;
+       /* we trunkate the input string to the correct size */
+       ring_buffer_rewind(sizew - len);
     } else {
       to_copy = sizew;
     }
     /* rewind ring buffer content we have just written */
-    ring_buffer_export(dst, sizew);
-    dst[sizew] = '\0';
+    ring_buffer_export(dst, to_copy);
+    dst[to_copy] = '\0';
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
     /* returning the number of written chars, casted to int
@@ -895,23 +953,32 @@ int vsnprintf(char *dst, size_t len, const char *fmt, va_list args)
      * be casted into int without being truncated
      */
     return (int)to_copy;
+err:
+    mutex_unlock(&rb_lock);
+err_init:
+    return ret;
 }
 
 int vsprintf(char *dst, const char *fmt, va_list args)
 {
     size_t sizew = 0;
+    int res = -1;
 
     /* sanitize */
     if (!dst) {
-        return -1;
+        goto err_init;
     }
     if (!mutex_trylock(&rb_lock)) {
         /* unable to lock the ring buffer, another context is currently
          * using it. As we may be executed in ISR mode, we prefer to
          * give up instead of waiting for the buffer to be released */
-        return -1;
+        goto err_init;
     }
-    sizew = print(fmt, args);
+    res = print(fmt, args, &sizew);
+    if (res == -1) {
+        ring_buffer_rewind(sizew);
+        goto err;
+    }
     /* copy the string we have just written to the ring buffer
      * into the dst string
      */
@@ -927,6 +994,10 @@ int vsprintf(char *dst, const char *fmt, va_list args)
      * be casted into int without being truncated
      */
     return (int)sizew;
+err:
+    mutex_unlock(&rb_lock);
+err_init:
+    return res;
 }
 
 
@@ -941,6 +1012,7 @@ int aprintf(const char *fmt, ...)
 {
     int res = -1;
     va_list args;
+    size_t len;
 
     if (!mutex_trylock(&rb_lock)) {
         /* unable to lock the ring buffer, another context is currently
@@ -949,7 +1021,7 @@ int aprintf(const char *fmt, ...)
         return res;
     }
     va_start(args, fmt);
-    res = print(fmt, args);
+    res = print(fmt, args, &len);
     va_end(args);
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);

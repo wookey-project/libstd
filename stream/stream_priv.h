@@ -40,6 +40,6 @@ void init_ring_buffer(void);
 
 void print_and_reset_buffer(void);
 
-int print(const char *fmt, va_list args);
+int print(const char *fmt, va_list args, size_t *sizew);
 
 #endif/*!STREAM_PRIV_H_*/
