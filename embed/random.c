@@ -33,7 +33,7 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
 {
     uint16_t i;
     uint8_t ret;
-    mbed_error_t err;
+    mbed_error_t err = MBED_ERROR_NONE;
 
     /*sanitize */
     if (!buf) {
@@ -49,9 +49,10 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
         if((ret = sys_get_random((char*)(&(buf[i])), 4))) {
             if (ret == SYS_E_DENIED) {
                 err = MBED_ERROR_DENIED;
-            }
-            if (ret == SYS_E_BUSY) {
+            } else if (ret == SYS_E_BUSY) {
                 err = MBED_ERROR_BUSY;
+            } else {
+                err = MBED_ERROR_UNKNOWN;
             }
             goto error;
         }
@@ -67,9 +68,10 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
         if((ret = sys_get_random(((char*)&random), 4))) {
             if (ret == SYS_E_DENIED) {
                 err = MBED_ERROR_DENIED;
-            }
-            if (ret == SYS_E_BUSY) {
+            } else if (ret == SYS_E_BUSY) {
                 err = MBED_ERROR_BUSY;
+            } else {
+                err = MBED_ERROR_UNKNOWN;
             }
             goto error;
         }
@@ -78,8 +80,6 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
             i++;
         }
     }
-
-    return MBED_ERROR_NONE;
 error:
     return err;
 }
