@@ -29,10 +29,10 @@
 #include "stream/stream_priv.h"
 #include "string/string_priv.h"
 
-int hexdump(const uint8_t *bin, uint32_t len)
+int hexdump(const uint8_t *bin, uint8_t len)
 {
     /* 3 chars per byte, plus the terminating char */
-    uint16_t buflen = len*3+1;
+    uint16_t buflen = (len*3)+1;
     char buf[buflen];
     int res = 0;
 

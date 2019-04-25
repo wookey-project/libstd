@@ -43,7 +43,7 @@
  * INFO: has the hexdump is a one line printing content, dumping a
  * buffer using successive hexdump() call is recommanded.
  */
-int hexdump(const uint8_t *bin, uint32_t len);
+int hexdump(const uint8_t *bin, uint8_t len);
 
 /*
  * This is an asyncrhonous implementation of the POSIX printf API.

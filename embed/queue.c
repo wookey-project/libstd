@@ -70,7 +70,7 @@ invparam:
 mbed_error_t queue_enqueue(queue_t *q, void *data)
 {
 	struct node *n;
-    uint32_t ret;
+    int ret;
 
     if (!q || !data) {
         return MBED_ERROR_INVPARAM;
