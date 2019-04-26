@@ -107,7 +107,7 @@ int strcmp(const char *s1, const char *s2)
         return UNDEFINED_BEHAVIOR_INT_VALUE;
     }
 
-    for (uint32_t i = 0; s1[i] != '\0' && s2[i] != '\0'; ++i) {
+    for (uint32_t i = 0; (s1[i] != '\0') && (s2[i] != '\0'); ++i) {
         if (s1[i] == s2[i]) {
             continue;
         } else {
@@ -139,7 +139,7 @@ int strncmp(const char *s1, const char *s2, uint32_t n)
         return UNDEFINED_BEHAVIOR_INT_VALUE;
     }
 
-    for (uint32_t i = 0; s1[i] != '\0' && s2[i] != '\0' && i < n; ++i) {
+    for (uint32_t i = 0; (s1[i] != '\0') && (s2[i] != '\0') && (i < n); ++i) {
         if (s1[i] == s2[i]) {
             continue;
         } else {
@@ -213,7 +213,7 @@ char *strncpy(char *dest, const char *src, uint32_t n)
     }
 
     /* copying up to n bytes from src */
-    for (i = 0; i < n && src[i] != '\0'; i++) {
+    for (i = 0; (i < n) && (src[i] != '\0'); i++) {
             dest[i] = src[i];
     }
     /* if src length is less than n, finishing with '\0' up to n */
