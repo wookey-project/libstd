@@ -167,7 +167,7 @@ static inline void ring_buffer_write_string(char *str, uint32_t len)
     if (!str) {
         goto end;
     }
-    for (uint32_t i = 0; i < len && str[i]; ++i) {
+    for (uint32_t i = 0; i < (len && str[i]); ++i) {
         ring_buffer_write_char(str[i]);
     }
 end:
@@ -325,7 +325,7 @@ static uint8_t get_number_len(uint64_t value, uint8_t base)
     uint8_t len = 1;
 
     /* now we calculate the number of digits in the number */
-    for (; value / base != 0; value /= base) {
+    for (; (value / base) != 0; value /= base) {
         len++;
     }
     return len;
@@ -419,7 +419,7 @@ static uint8_t print_handle_format_string(const char *fmt, va_list *args, uint8_
                 }
                 fs_prop.attr_0len = true;
                 /* 0 must be completed with size content. We check it now */
-                while (fmt[fs_prop.consumed + 1] >= '0' && fmt[fs_prop.consumed + 1] <= '9') {
+                while ((fmt[fs_prop.consumed + 1] >= '0') && (fmt[fs_prop.consumed + 1] <= '9')) {
                     /* getting back the size. Here only decimal values are handled */
                     fs_prop.size = (fs_prop.size * 10) + (fmt[fs_prop.consumed + 1] - '0');
                     fs_prop.consumed++;
