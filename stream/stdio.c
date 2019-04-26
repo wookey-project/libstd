@@ -439,8 +439,8 @@ static uint8_t print_handle_format_string(const char *fmt, va_list * args,
                            (fmt[fs_prop.consumed + 1] <= '9')) {
                         /* getting back the size. Here only decimal values are handled */
                         fs_prop.size =
-                            (fs_prop.size * 10) + (fmt[fs_prop.consumed + 1] -
-                                                   '0');
+                            (fs_prop.size * 10) +
+			    (fmt[fs_prop.consumed + 1] - '0');
                         fs_prop.consumed++;
                     }
                     /* if digits have been found after the 0len format string, attr_size is
