@@ -28,6 +28,10 @@
 #include "libc/types.h"
 #include "libc/syscall.h"
 #include "string/string_priv.h"
+#include "libc/semaphore.h"
+
+static volatile bool hexdump_mutex_initialized = false;
+static volatile uint32_t hexdump_mutex;
 
 static int _hexdump(const uint8_t *bin, uint8_t len)
 {
@@ -41,12 +45,22 @@ static int _hexdump(const uint8_t *bin, uint8_t len)
     char    buf[(255 * 3) + 1];
     int     res = 0;
 
+    /* We protect our buffer access with a mutex */
+    if(hexdump_mutex_initialized == false){
+        mutex_init(&hexdump_mutex);
+        hexdump_mutex_initialized = true;
+    }
+    while (!mutex_trylock(&hexdump_mutex)) {
+        continue;
+    }
     for (uint32_t i = 0; i < len; i++) {
         /* each hexadecimal value is printed using two hex char, padding
          * with zero if needed. making the string having a fixed size */
         sprintf(&(buf[i * 3]), "%02x ", bin[i]);
     }
     res = printf("%s\n", buf);
+    mutex_unlock(&hexdump_mutex);
+
     return res;
 }
 
