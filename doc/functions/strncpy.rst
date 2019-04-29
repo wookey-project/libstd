@@ -1,10 +1,9 @@
 strncpy
 -------
-copy a substring from one string to another
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Copy a substring from one string to another
 
 Synopsys
-""""""""
+^^^^^^^^
 
 strcpy - copy a string
 
@@ -21,7 +20,7 @@ strcpy respects the following prototype::
    char *strcpy(char *dest, const char *src);
 
 Conforming to
-"""""""""""""
+^^^^^^^^^^^^^
 
 strcpy() and strncpy() are conform to POSIX-1-2001, C09, C99, SVr4 and 4.3BSD
 

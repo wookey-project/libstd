@@ -2,10 +2,9 @@ mutexes
 -------
 
 Mutual exclusive locks
-^^^^^^^^^^^^^^^^^^^^^^
 
 Synopsys
-""""""""
+^^^^^^^^
 
 The mutex functions family allows to use a variable to detect a mutually exclusive lock. This permit to protect critical sections of code between two concurrent threads.
 

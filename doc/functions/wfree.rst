@@ -1,10 +1,8 @@
 wmalloc_init
 ------------
-brief message
-^^^^^^^^^^^^^
 
 Synopsys
-""""""""
+^^^^^^^^
 
 wmalloc_init respects the following prototype::
 

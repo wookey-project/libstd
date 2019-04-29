@@ -13,43 +13,74 @@ EwoK Standard library
 
 .. contents::
 
-Introduction
-------------
-
-EwoK standard library is the EwoK microkernel userspace small libc implementation, hosting:
+EwoK standard library is the EwoK microkernel userspace small libc
+implementation, hosting:
 
    * The userspace syscall part
-   * The various embedded-specific utility functions (such as registers manipulation helpers)
+   * The various embedded-specific utility functions (such as registers
+     manipulation helpers)
    * Some various basic functions for string manipulation, etc.
 
 
 libstd API
 ----------
 
-The libstd API is decomposed in various and small foot-print specific components.
+Libstd **does not aim** to be a POSIX compliant library. Nevertheless, for
+functions that behave like POSIX ones, libstd try to keep the POSIX conformant
+API.
 
-   * libstream: the I/O pretty printing API, such as printf API
-   * libstring: string manipulation API
-   * libarpa: endianess manipulation for protocol stacks
-   * libembed: various embedded-related API, including data storage API and various others
-   * liballoc: the memory allocator
-
-libstd **does not aim** to be a POSIX compliant library. Nevertheless, for functions that behave
-like POSIX ones, libstd try to keep the POSIX conformant API.
-
-Each component is described bellow.
+Each function is described bellow.
 
 .. toctree::
   :maxdepth: 1
 
-  EwoK libstd's libstring <libstring>
-  EwoK libstd's libembed <libembed>
-  EwoK libstd's libstream <libstream>
-  EwoK libstd's libarpa <libarpa>
+   aprintf_flush <functions/aprintf_flush>
+   aprintf <functions/aprintf>
+   get_random <functions/get_random>
+   get_reg_value <functions/get_reg_value>
+   hexdump <functions/hexdump>
+   htonl <functions/htonl>
+   htons <functions/htons>
+   memcmp <functions/memcmp>
+   mutex_init <functions/mutex_init>
+   mutex_lock <functions/mutex_lock>
+   mutex_trylock <functions/mutex_trylock>
+   mutex_unlock <functions/mutex_unlock>
+   ntohl <functions/ntohl>
+   ntohs <functions/ntohs>
+   printf <functions/printf>
+   queue_available_space <functions/queue_available_space>
+   queue_create <functions/queue_create>
+   queue_dequeue <functions/queue_dequeue>
+   queue_enqueue <functions/queue_enqueue>
+   queue_is_empty <functions/queue_is_empty>
+   read_reg16_value <functions/read_reg16_value>
+   read_reg_value <functions/read_reg_value>
+   semaphore_init <functions/semaphore_init>
+   semaphore_lock <functions/semaphore_lock>
+   semaphore_release <functions/semaphore_release>
+   semaphore_trylock <functions/semaphore_trylock>
+   set_reg_value <functions/set_reg_value>
+   snprintf <functions/snprintf>
+   sprintf <functions/sprintf>
+   strcmp <functions/strcmp>
+   strcpy <functions/strcpy>
+   strlen <functions/strlen>
+   strncmp <functions/strncmp>
+   strncpy <functions/strncpy>
+   vprintf <functions/vprintf>
+   vsnprintf <functions/vsnprintf>
+   vsprintf <functions/vsprintf>
+   wfree <functions/wfree>
+   wmalloc_init <functions/wmalloc_init>
+   wmalloc <functions/wmalloc>
+   write_reg16_value <functions/write_reg16_value>
+   write_reg_value <functions/write_reg_value>
 
-libstd FAQ
-----------
+FAQ
+---
 
 .. include:: faq.rst
    :start-line: 4
+
 

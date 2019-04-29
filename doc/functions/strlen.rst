@@ -1,10 +1,9 @@
 strlen
 ------
-calculate the length of a string
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Calculate the length of a string
 
 Synopsys
-""""""""
+^^^^^^^^
 
 strlen respects the following prototype::
 

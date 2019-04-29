@@ -1,10 +1,9 @@
 get_random
 ----------
 Random source accessor
-^^^^^^^^^^^^^^^^^^^^^^
 
 Synopsis
-""""""""
+^^^^^^^^
 
 Get back some random content from the system entropy source.
 
@@ -12,7 +11,7 @@ Get back some random content from the system entropy source.
    get_random() requires the PERM_RES_DEV_RNG permission to request random content from the KRNG entropy source
 
 Description
-"""""""""""
+^^^^^^^^^^^
 
 get_random load random content from the system entropy source into a buffer
 

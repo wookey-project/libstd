@@ -1,10 +1,9 @@
 printf
 ------
 formated output conversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Synopsys
-""""""""
+^^^^^^^^
 
 This implementation of printf implement a subset of the POSIX.1-2001 and C99 standard API (as we are in an embedded system).
 
@@ -26,9 +25,11 @@ The printf familly respects the following prototype::
 
 
 Description
-"""""""""""
+^^^^^^^^^^^
 
-Even if all the printf() fmt formating is not supported, the behavior of the functions for the supported flags chars and lenght modifiers is conform to the standard.
+Even if all the printf() fmt formating is not supported, the behavior of the
+functions for the supported flags chars and lenght modifiers is conform to the
+standard.
 The following is supported:
 
 +----------------+-----------------------------------------------------------+
@@ -70,7 +71,7 @@ The following is supported:
 Other flags characters and length modifiers are not supported, generating an immediate stop of the fmt parsing.
 
 Conforming to
-"""""""""""""
+^^^^^^^^^^^^^
 
 POSIX.1-2001, POSIX.1-2008, C89, C99
 
