@@ -1,3 +1,5 @@
+.. _lib_std_faq:
+
 Libstd FAQ
 ----------
 

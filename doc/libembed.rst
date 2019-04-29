@@ -1,3 +1,5 @@
+.. _lib_embed:
+
 Libstd libembed API
 -------------------
 

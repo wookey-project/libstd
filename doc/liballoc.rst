@@ -1,3 +1,5 @@
+.. _lib_alloc:
+
 Libstd liballoc API
 -------------------
 
