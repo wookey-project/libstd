@@ -45,6 +45,7 @@ static int _hexdump(const uint8_t *bin, uint8_t len)
     char    buf[(255 * 3) + 1];
     int     res = 0;
 
+
     /* We protect our buffer access with a mutex */
     if(hexdump_mutex_initialized == false){
         mutex_init(&hexdump_mutex);
