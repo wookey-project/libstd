@@ -35,15 +35,11 @@
  * \return the number of printed characters (should be bigger than the
  *         input buffer len
  *
- * WARNING: this function is stack consuming (i.e. a local buffer is
- * generated using 3*len+1 local buffer to generate the hexadecimal
- * value. Beware not to use too big input buffer, or use multiple
- * call to hexdump instead.
  *
  * INFO: has the hexdump is a one line printing content, dumping a
- * buffer using successive hexdump() call is recommanded.
+ * buffer using successive hexdump() call is performed.
  */
-int hexdump(const uint8_t *bin, uint8_t len);
+int hexdump(const uint8_t *bin, int len);
 
 /*
  * This is an asyncrhonous implementation of the POSIX printf API.

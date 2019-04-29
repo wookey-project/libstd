@@ -29,11 +29,16 @@
 #include "stream/stream_priv.h"
 #include "string/string_priv.h"
 
-int hexdump(const uint8_t *bin, uint8_t len)
+static int _hexdump(const uint8_t *bin, uint8_t len)
 {
-    /* 3 chars per byte, plus the terminating char */
-    uint16_t buflen = (len*3)+1;
-    char buf[buflen];
+    /* NOTE: since our unerlying printf/log system call 
+     * adds a line break at each call, we have to first
+     * push the input of hexdump in a local buffer.
+     * For stack size reasons, we limit the input buffer to 255 bytes,
+     * hence limiting our local buffer length to (255*3)+1 bytes.
+     */
+    /* 3 chars per byte, plus the terminating '\0' char */
+    char buf[(255*3)+1];
     int res = 0;
 
     for (uint32_t i = 0; i < len; i++) {
@@ -45,3 +50,23 @@ int hexdump(const uint8_t *bin, uint8_t len)
     return res;
 }
 
+
+int hexdump(const uint8_t *bin, int len)
+{
+    int res, consumed, to_print;
+    if(len <= 0){
+        return 0;
+    }
+    consumed = 0;
+    while(consumed <= len){
+        to_print = ((len - consumed) < 255) ? (len - consumed) : 255;
+        /* Sanity check for overflow */
+        if(consumed > len){
+            goto end;
+        }
+        res += _hexdump(bin + consumed, to_print);
+        consumed += to_print;
+    }
+end:
+    return res;
+}
