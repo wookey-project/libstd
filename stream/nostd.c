@@ -29,7 +29,7 @@
 #include "libc/syscall.h"
 #include "string/string_priv.h"
 
-static int _hexdump(const uint8_t * bin, uint8_t len)
+static int _hexdump(const uint8_t *bin, uint8_t len)
 {
     /* NOTE: since our unerlying printf/log system call 
      * adds a line break at each call, we have to first
@@ -68,6 +68,6 @@ int hexdump(const uint8_t * bin, int len)
         res += _hexdump(bin + consumed, to_print);
         consumed += to_print;
     }
- end:
+end:
     return res;
 }
