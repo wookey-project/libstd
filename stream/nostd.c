@@ -22,14 +22,14 @@
  *
  */
 #include "libc/stdio.h"
+#include "libc/stdarg.h"
 #include "libc/nostd.h"
 #include "libc/string.h"
 #include "libc/types.h"
 #include "libc/syscall.h"
-#include "stream/stream_priv.h"
 #include "string/string_priv.h"
 
-static int _hexdump(const uint8_t *bin, uint8_t len)
+static int _hexdump(const uint8_t * bin, uint8_t len)
 {
     /* NOTE: since our unerlying printf/log system call 
      * adds a line break at each call, we have to first
@@ -38,35 +38,36 @@ static int _hexdump(const uint8_t *bin, uint8_t len)
      * hence limiting our local buffer length to (255*3)+1 bytes.
      */
     /* 3 chars per byte, plus the terminating '\0' char */
-    char buf[(255*3)+1];
-    int res = 0;
+    char    buf[(255 * 3) + 1];
+    int     res = 0;
 
     for (uint32_t i = 0; i < len; i++) {
         /* each hexadecimal value is printed using two hex char, padding
          * with zero if needed. making the string having a fixed size */
-        sprintf(&(buf[i*3]), "%02x ", bin[i]);
+        sprintf(&(buf[i * 3]), "%02x ", bin[i]);
     }
     res = printf("%s\n", buf);
     return res;
 }
 
 
-int hexdump(const uint8_t *bin, int len)
+int hexdump(const uint8_t * bin, int len)
 {
-    int res, consumed, to_print;
-    if(len <= 0){
+    int     res, consumed, to_print;
+
+    if (len <= 0) {
         return 0;
     }
     consumed = 0;
-    while(consumed <= len){
+    while (consumed <= len) {
         to_print = ((len - consumed) < 255) ? (len - consumed) : 255;
         /* Sanity check for overflow */
-        if(consumed > len){
+        if (consumed > len) {
             goto end;
         }
         res += _hexdump(bin + consumed, to_print);
         consumed += to_print;
     }
-end:
+ end:
     return res;
 }

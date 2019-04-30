@@ -24,22 +24,13 @@
 #ifndef STREAM_PRIV_H_
 # define STREAM_PRIV_H_
 
-#include <stdarg.h>
+#include "stdarg.h"
 #include "libc/types.h"
 
-#define BUF_MAX	512
-
-struct s_ring {
-    uint32_t start;
-    uint32_t end;
-    bool     full;
-    char buf[BUF_MAX];
-};
-
+/*
+ * This function is exported for the libstd task initialization glue.
+ * The printf ring buffer is initialized at task startup.
+ */
 void init_ring_buffer(void);
-
-void print_and_reset_buffer(void);
-
-int print(const char *fmt, va_list args, size_t *sizew);
 
 #endif/*!STREAM_PRIV_H_*/
