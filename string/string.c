@@ -29,10 +29,10 @@
 #define UNDEFINED_BEHAVIOR_STR_VALUE NULL
 
 static const char *strerror_tab[4] = {
-    "Done", //"Done: Syscall finished successfully",
-    "Inval", //"Inval: user informations are not valid",
-    "Denied", //"Denied: not the good time or access prohibed",
-    "Busy", //"Busy: already used or not enough space to use",
+    "Done",                     //"Done: Syscall finished successfully",
+    "Inval",                    //"Inval: user informations are not valid",
+    "Denied",                   //"Denied: not the good time or access prohibed",
+    "Busy",                     //"Busy: already used or not enough space to use",
 };
 
 /***********************************************
@@ -164,7 +164,7 @@ int strncmp(const char *s1, const char *s2, uint32_t n)
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
-char *strcpy(char *dest, const char *src)
+char   *strcpy(char *dest, const char *src)
 {
     uint32_t i;
 
@@ -179,7 +179,7 @@ char *strcpy(char *dest, const char *src)
 
     /* copying up to n bytes from src */
     for (i = 0; src[i] != '\0'; i++) {
-            dest[i] = src[i];
+        dest[i] = src[i];
     }
     /* finishing with '\0' */
     dest[i] = src[i];
@@ -200,7 +200,7 @@ char *strcpy(char *dest, const char *src)
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
-char *strncpy(char *dest, const char *src, uint32_t n)
+char   *strncpy(char *dest, const char *src, uint32_t n)
 {
     uint32_t i;
 
@@ -214,10 +214,10 @@ char *strncpy(char *dest, const char *src, uint32_t n)
 
     /* copying up to n bytes from src */
     for (i = 0; (i < n) && (src[i] != '\0'); i++) {
-            dest[i] = src[i];
+        dest[i] = src[i];
     }
     /* if src length is less than n, finishing with '\0' up to n */
-    for ( ; i < n; i++) {
+    for (; i < n; i++) {
         dest[i] = '\0';
     }
 
@@ -239,9 +239,9 @@ char *strncpy(char *dest, const char *src, uint32_t n)
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
-void *memcpy(void *dest, const void *src, uint32_t n)
+void   *memcpy(void *dest, const void *src, uint32_t n)
 {
-    char *d_bytes = dest;
+    char   *d_bytes = dest;
     const char *s_bytes = src;
 
     /* sanitation. This part can produce, as defined in the above
@@ -292,8 +292,8 @@ int memcmp(const void *s1, const void *s2, int n)
 
     /* looping upto n == 0 */
     for (; n--; s1++, s2++) {
-        u1 = *(const unsigned char *)s1;
-        u2 = *(const unsigned char *)s2;
+        u1 = *(const unsigned char *) s1;
+        u2 = *(const unsigned char *) s2;
         if (u1 != u2) {
             return (u1 - u2);
         }
@@ -314,7 +314,7 @@ int memcmp(const void *s1, const void *s2, int n)
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
-void *memset(void *s, int c, uint32_t n)
+void   *memset(void *s, int c, uint32_t n)
 {
     /* sanitation. This part can produce, as defined in the above
      * standard, an 'undefined behavior'. As a consequence, in all
@@ -325,7 +325,8 @@ void *memset(void *s, int c, uint32_t n)
     }
 
     /* memseting s with c */
-    char *bytes = s;
+    char   *bytes = s;
+
     while (n) {
         *bytes = c;
         bytes++;
@@ -333,4 +334,3 @@ void *memset(void *s, int c, uint32_t n)
     }
     return s;
 }
-
