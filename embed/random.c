@@ -45,8 +45,9 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
     memset(buf, 0, len);
 
     /* Generate as much random as necessary */
-    for(i = 0; i < sizeof(uint32_t) * (len / sizeof(uint32_t)); i += sizeof(uint32_t)) {
-        if((ret = sys_get_random((char*)(&(buf[i])), 4))) {
+    for (i = 0; i < sizeof(uint32_t) * (len / sizeof(uint32_t));
+         i += sizeof(uint32_t)) {
+        if ((ret = sys_get_random((char *) (&(buf[i])), 4))) {
             if (ret == SYS_E_DENIED) {
                 err = MBED_ERROR_DENIED;
             } else if (ret == SYS_E_BUSY) {
@@ -57,15 +58,16 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
             goto error;
         }
     }
-    if((len - i) > (int16_t)sizeof(uint32_t)) {
+    if ((len - i) > (int16_t) sizeof(uint32_t)) {
         /* We should not end here, the buf len is not 32 bits multiple */
         err = MBED_ERROR_INVPARAM;
         goto error;
     }
     /* Handle the remaining bytes */
-    if(i < len){
+    if (i < len) {
         uint32_t random;
-        if((ret = sys_get_random(((char*)&random), 4))) {
+
+        if ((ret = sys_get_random(((char *) &random), 4))) {
             if (ret == SYS_E_DENIED) {
                 err = MBED_ERROR_DENIED;
             } else if (ret == SYS_E_BUSY) {
@@ -75,11 +77,11 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
             }
             goto error;
         }
-        while(i < len){
+        while (i < len) {
             buf[i] = (random >> (8 * (len - i))) & 0xff;
             i++;
         }
     }
-error:
+ error:
     return err;
 }

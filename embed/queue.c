@@ -29,9 +29,9 @@
 
 #define QUEUE_DEBUG 0
 
-mbed_error_t queue_create(uint32_t capacity, queue_t **queue)
+mbed_error_t queue_create(uint32_t capacity, queue_t ** queue)
 {
-	queue_t *q = 0;
+    queue_t *q = 0;
 
     /* sanitizing */
     if (!queue) {
@@ -45,7 +45,7 @@ mbed_error_t queue_create(uint32_t capacity, queue_t **queue)
     }
 
     /* allocating */
-    if (wmalloc((void**)&q, sizeof(queue_t), ALLOC_NORMAL) != 0) {
+    if (wmalloc((void **) &q, sizeof(queue_t), ALLOC_NORMAL) != 0) {
         goto nomem;
     }
 #if QUEUE_DEBUG
@@ -54,23 +54,23 @@ mbed_error_t queue_create(uint32_t capacity, queue_t **queue)
     /* initializing */
     q->head = NULL;
     q->tail = NULL;
-	q->max = capacity;
-	q->size = 0;
+    q->max = capacity;
+    q->size = 0;
     mutex_init(&q->lock);
 
     *queue = q;
 
-	return MBED_ERROR_NONE;
-nomem:
+    return MBED_ERROR_NONE;
+ nomem:
     return MBED_ERROR_NOMEM;
-invparam:
+ invparam:
     return MBED_ERROR_INVPARAM;
 }
 
-mbed_error_t queue_enqueue(queue_t *q, void *data)
+mbed_error_t queue_enqueue(queue_t * q, void *data)
 {
-	struct node *n;
-    int ret;
+    struct node *n;
+    int     ret;
 
     if (!q || !data) {
         return MBED_ERROR_INVPARAM;
@@ -80,7 +80,7 @@ mbed_error_t queue_enqueue(queue_t *q, void *data)
         return MBED_ERROR_NOMEM;
     }
 
-    if((ret = wmalloc((void**)&n, sizeof(struct node), ALLOC_NORMAL)) != 0) {
+    if ((ret = wmalloc((void **) &n, sizeof(struct node), ALLOC_NORMAL)) != 0) {
         aprintf("[ISR] Error in malloc: %d\n", ret);
         return MBED_ERROR_NOMEM;
     }
@@ -90,24 +90,24 @@ mbed_error_t queue_enqueue(queue_t *q, void *data)
         return MBED_ERROR_BUSY;
     }
 
-	n->next = q->head;
-	n->prev = NULL;
-	n->data = data;
-	if (q->head){
-		q->head->prev = n;
-	}
-	q->head = n;
-	if (!q->tail) {
-		q->tail = q->head;
-	}
-	q->size++;
+    n->next = q->head;
+    n->prev = NULL;
+    n->data = data;
+    if (q->head) {
+        q->head->prev = n;
+    }
+    q->head = n;
+    if (!q->tail) {
+        q->tail = q->head;
+    }
+    q->size++;
 
     mutex_unlock(&q->lock);
 
-	return MBED_ERROR_NONE;
+    return MBED_ERROR_NONE;
 }
 
-mbed_error_t queue_next_element(queue_t *q, void **next)
+mbed_error_t queue_next_element(queue_t * q, void **next)
 {
     if (!q || !next) {
         return MBED_ERROR_INVPARAM;
@@ -123,14 +123,15 @@ mbed_error_t queue_next_element(queue_t *q, void **next)
         return MBED_ERROR_NOSTORAGE;
     }
 
-	*next = (void*)q->tail->data;
+    *next = (void *) q->tail->data;
     mutex_unlock(&q->lock);
     return MBED_ERROR_NONE;
 }
 
-mbed_error_t queue_dequeue(queue_t *q, void **data)
+mbed_error_t queue_dequeue(queue_t * q, void **data)
 {
     mbed_error_t ret = MBED_ERROR_NONE;
+
     if (!q || !data) {
         ret = MBED_ERROR_INVPARAM;
         goto early_error;
@@ -146,38 +147,39 @@ mbed_error_t queue_dequeue(queue_t *q, void **data)
         goto nostorage;
     }
 
-	struct node *last = q->tail;
-	*data = last->data;
+    struct node *last = q->tail;
+
+    *data = last->data;
 
     if (!*data) {
-       ret = MBED_ERROR_NOSTORAGE;
+        ret = MBED_ERROR_NOSTORAGE;
     }
 
-	if(last->prev != NULL){
-		last->prev->next = NULL;
-	}
+    if (last->prev != NULL) {
+        last->prev->next = NULL;
+    }
 
-	q->tail = last->prev;
+    q->tail = last->prev;
 
-	if (last == q->head){
-		q->head = NULL;
-	}
-	q->size--;
+    if (last == q->head) {
+        q->head = NULL;
+    }
+    q->size--;
 
-	if (wfree((void**)&last) != 0) {
+    if (wfree((void **) &last) != 0) {
 #if QUEUE_DEBUG
         /* this error should not happend. */
         aprintf("free failed with %x\n", ret);
 #endif
     }
 
-nostorage:
+ nostorage:
     mutex_unlock(&q->lock);
-early_error:
-	return ret;
+ early_error:
+    return ret;
 }
 
-bool queue_is_empty(queue_t *q)
+bool queue_is_empty(queue_t * q)
 {
     /* q->size access should be atomic (after the q
      * address derefrence). As it is a basic field
@@ -185,7 +187,7 @@ bool queue_is_empty(queue_t *q)
     return (q->size == 0);
 }
 
-mbed_error_t queue_available_space(queue_t *q, uint32_t *space)
+mbed_error_t queue_available_space(queue_t * q, uint32_t * space)
 {
     if (!q || !space) {
         return MBED_ERROR_INVPARAM;
@@ -197,10 +199,10 @@ mbed_error_t queue_available_space(queue_t *q, uint32_t *space)
     *space = q->max - q->size;
 
     mutex_unlock(&q->lock);
-	return MBED_ERROR_NONE;
+    return MBED_ERROR_NONE;
 }
 
-mbed_error_t queue_dump(queue_t *q)
+mbed_error_t queue_dump(queue_t * q)
 {
     if (!q) {
         return MBED_ERROR_INVPARAM;

@@ -23,11 +23,13 @@
  */
 #include "libc/types.h"
 #include "autoconf.h"
+
 #ifdef CONFIG_ARCH_ARMV7M
-#include "arch/cores/armv7-m/m4-sync.h"
+# include "arch/cores/armv7-m/m4-sync.h"
 #else
-#error "Unknown architecture"
+# error "Unknown architecture"
 #endif
+
 #include "libc/semaphore.h"
 
 /*
@@ -35,7 +37,7 @@
  * value determine the number of concurrent threads that can access
  * a ressource in the same time.
  */
-void mutex_init(volatile uint32_t *mutex)
+void mutex_init(volatile uint32_t * mutex)
 {
     *mutex = 1;
 }
@@ -43,30 +45,31 @@ void mutex_init(volatile uint32_t *mutex)
 /*
  * Try to lock the current semaphore
  */
-bool mutex_trylock(volatile uint32_t* mutex)
+bool mutex_trylock(volatile uint32_t * mutex)
 {
     return core_semaphore_trylock(mutex);
 }
 
-void mutex_lock(volatile uint32_t* mutex)
+void mutex_lock(volatile uint32_t * mutex)
 {
-    bool is_locked = false;
+    bool    is_locked = false;
+
     do {
         is_locked = core_semaphore_trylock(mutex);
     } while (!is_locked);
 }
 
 
-void mutex_unlock(volatile uint32_t* mutex)
+void mutex_unlock(volatile uint32_t * mutex)
 {
-    bool ret;
+    bool    ret;
 
     do {
         ret = core_semaphore_release(mutex);
     } while (ret == false);
 }
 
-bool mutex_tryunlock(volatile uint32_t* mutex)
+bool mutex_tryunlock(volatile uint32_t * mutex)
 {
     return core_semaphore_release(mutex);
 }
