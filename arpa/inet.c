@@ -61,6 +61,7 @@ static inline uint16_t to_little16(uint16_t value)
 uint16_t htons(uint16_t hostshort)
 {
     uint16_t netshort = hostshort;
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     netshort = to_big16(hostshort);
 #endif
@@ -80,6 +81,7 @@ uint16_t htons(uint16_t hostshort)
 uint32_t htonl(uint32_t hostlong)
 {
     uint32_t netlong = hostlong;
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     netlong = to_big32(hostlong);
 #endif
@@ -99,6 +101,7 @@ uint32_t htonl(uint32_t hostlong)
 uint16_t ntohs(uint16_t netshort)
 {
     uint16_t hostshort = netshort;
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     hostshort = to_little16(netshort);
 #endif
@@ -118,6 +121,7 @@ uint16_t ntohs(uint16_t netshort)
 uint32_t ntohl(uint32_t netlong)
 {
     uint32_t hostlong = netlong;
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     hostlong = to_little32(netlong);
 #endif
