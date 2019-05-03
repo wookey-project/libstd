@@ -179,7 +179,7 @@ static inline void ring_buffer_write_string(char *str, uint32_t len)
     if (!str) {
         goto end;
     }
-    for (uint32_t i = 0; i < (len && str[i]); ++i) {
+    for (uint32_t i = 0; (i < len) && (str[i]); ++i) {
         ring_buffer_write_char(str[i]);
     }
  end:
@@ -197,7 +197,7 @@ static void ring_buffer_write_number(uint64_t value, uint8_t base)
     uint8_t number[64] = { 0 };
     int     index = 0;
 
-    for (; value / base != 0; value /= base) {
+    for (; (value / base) != 0; value /= base) {
         number[index++] = value % base;
     }
     /* finishing with most significant unit */
