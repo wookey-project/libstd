@@ -73,13 +73,13 @@ int hexdump(const uint8_t * bin, int len)
         return 0;
     }
     consumed = 0;
-    while (consumed <= len) {
+    while (consumed < len) {
         to_print = ((len - consumed) < 255) ? (len - consumed) : 255;
         /* Sanity check for overflow */
         if (consumed > len) {
             goto end;
         }
-        res += _hexdump(bin + consumed, to_print);
+        res += _hexdump(bin + consumed, (uint8_t)to_print);
         consumed += to_print;
     }
 end:
