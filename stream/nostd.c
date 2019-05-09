@@ -68,7 +68,8 @@ static int _hexdump(const uint8_t *bin, uint8_t len)
 
 int hexdump(const uint8_t * bin, int len)
 {
-    int     res, consumed, to_print;
+    int     res = 0;
+    int     consumed, to_print;
 
     if (len <= 0) {
         return 0;
