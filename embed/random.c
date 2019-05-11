@@ -45,7 +45,7 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
     memset(buf, 0, len);
 
     /* Generate as much random as necessary */
-    for (i = 0; i < sizeof(uint32_t) * (len / sizeof(uint32_t));
+    for (i = 0; i < (sizeof(uint32_t) * (len / sizeof(uint32_t)));
          i += sizeof(uint32_t)) {
         if ((ret = sys_get_random((char *) (&(buf[i])), 4))) {
             if (ret == SYS_E_DENIED) {
