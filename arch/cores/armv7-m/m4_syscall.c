@@ -48,7 +48,7 @@ void do_starttask(uint32_t slot, uint32_t seed)
     _main(slot);
 
     /* End of task */
-    printf("End of task\n");
+    printf("\033[37;43mEnd of task\033[37;40m\n");
     asm volatile ("svc #1\n":::);
 
     while (1) {
