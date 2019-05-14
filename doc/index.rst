@@ -1,5 +1,8 @@
 .. _lib_std:
 
+
+.. highlight:: c
+
 EwoK Standard library
 =====================
 
