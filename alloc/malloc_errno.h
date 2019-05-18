@@ -1,6 +1,11 @@
 #ifndef H_ERRNO
 #define H_ERRNO
 
+/* Author: Christophe GUNST (christop.gh@gmail.com)
+ * 
+ * (implementation of an allocator for the WooKey project)
+ */
+
 #include "autoconf.h"
 
 #include "libc/types.h"

@@ -1,3 +1,8 @@
+/* Author: Christophe GUNST (christop.gh@gmail.com)
+ * 
+ * (implementation of an allocator for the WooKey project)
+ */
+
 #ifndef H_STD_CONFIG
 #define H_STD_CONFIG
 

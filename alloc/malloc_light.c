@@ -1,3 +1,8 @@
+/* Author: Christophe GUNST (christop.gh@gmail.com)
+ * 
+ * (implementation of an allocator for the WooKey project)
+ */
+
 #include "autoconf.h"
 
 #ifdef CONFIG_STD_MALLOC_LIGHT
