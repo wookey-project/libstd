@@ -268,7 +268,7 @@ static uint32_t ring_buffer_rewind(uint32_t len)
         return 0;
     }
     if (ring_buffer.end > ring_buffer.start) {
-        if (len > ring_buffer.end - ring_buffer.start) {
+        if (len > (ring_buffer.end - ring_buffer.start)) {
             return 0;
         }
     } else if (ring_buffer.start > ring_buffer.end) {
@@ -278,7 +278,7 @@ static uint32_t ring_buffer_rewind(uint32_t len)
     }
 
     if (ring_buffer.end >= len) {
-        for (uint16_t i = ring_buffer.end - len; i < ring_buffer.end; i++) {
+        for (uint16_t i = (ring_buffer.end - len); i < ring_buffer.end; i++) {
             ring_buffer.buf[i] = '\0';
         }
         ring_buffer.end -= len;
@@ -288,7 +288,7 @@ static uint32_t ring_buffer_rewind(uint32_t len)
         for (uint16_t i = 0; i < ring_buffer.end; i++) {
             ring_buffer.buf[i] = '\0';
         }
-        for (uint16_t i = BUF_MAX - len + first; i < BUF_MAX; i++) {
+        for (uint16_t i = (BUF_MAX - len + first); i < BUF_MAX; i++) {
             ring_buffer.buf[i] = '\0';
         }
         ring_buffer.end = BUF_MAX - len + first;
