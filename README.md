@@ -2,6 +2,7 @@ EwoK Standard library
 =====================
 
 [![Release](https://img.shields.io/github/release/wookey-project/libstd.svg)](https://github.com/wookey-project/libstd/releases/latest)
+[![Travis CI Build Status](https://api.travis-ci.com/wookey-project/libstd.svg?branch=master)](https://travis-ci.com/wookey-project/libstd)
 
 Introduction
 ------------
