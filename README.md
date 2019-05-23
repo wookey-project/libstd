@@ -1,6 +1,8 @@
 EwoK Standard library
 =====================
 
+[![Release](https://img.shields.io/github/release/wookey-project/libstd.svg)](https://github.com/wookey-project/libstd/releases/latest)
+
 Introduction
 ------------
 
