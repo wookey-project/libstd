@@ -49,7 +49,7 @@ void do_starttask(uint32_t slot, uint32_t seed)
 
     /* End of task */
     printf("\033[37;43mEnd of task\033[37;40m\n");
-    asm volatile ("svc %0\n"::"i" (SVC_TASK_DONE):);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -65,7 +65,7 @@ void __stack_chk_fail(void)
     printf("Failed to check the stack guard ! Stack corruption !");
 
     /* End of task. NOTE: stack corruption is a serious security issue */
-    asm volatile ("svc %0\n"::"i" (SVC_TASK_DONE):);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -94,7 +94,7 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
     }
 
     /* End of ISR */
-    asm volatile ("svc %0\n"::"i" (SVC_ISR_DONE):);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -111,20 +111,22 @@ e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
     e_syscall_ret ret;
 
     switch (svc) {
-        case SVC_TASK_DONE:
-            return SYS_E_DENIED;
-        case SVC_ISR_DONE:
-            return SYS_E_DENIED;
+        case SVC_EXIT:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_EXIT),[args] "g"(args)
+                          :"r0");
+            return ret; /* Is never executed */
         case SVC_YIELD:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
                           :[svc] "i"(SVC_YIELD),[args] "g"(args)
                           :"r0");
             return ret;
-        case SVC_GETTICK:
+        case SVC_GET_TIME:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
-                          :[svc] "i"(SVC_GETTICK),[args] "g"(args)
+                          :[svc] "i"(SVC_GET_TIME),[args] "g"(args)
                           :"r0");
             return ret;
         case SVC_RESET:
@@ -151,28 +153,28 @@ e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
                           :[svc] "i"(SVC_LOG),[args] "g"(args)
                           :"r0");
             return ret;
-        case SVC_INIT_DEVACCESS:
+        case SVC_REGISTER_DEVICE:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
-                          :[svc] "i"(SVC_INIT_DEVACCESS),[args] "g"(args)
+                          :[svc] "i"(SVC_REGISTER_DEVICE),[args] "g"(args)
                           :"r0");
             return ret;
-        case SVC_INIT_DMA:
+        case SVC_REGISTER_DMA:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
-                          :[svc] "i"(SVC_INIT_DMA),[args] "g"(args)
+                          :[svc] "i"(SVC_REGISTER_DMA),[args] "g"(args)
                           :"r0");
             return ret;
-        case SVC_INIT_DMA_SHM:
+        case SVC_REGISTER_DMA_SHM:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
-                          :[svc] "i"(SVC_INIT_DMA_SHM),[args] "g"(args)
+                          :[svc] "i"(SVC_REGISTER_DMA_SHM),[args] "g"(args)
                           :"r0");
             return ret;
-        case SVC_INIT_GETTASKID:
+        case SVC_GET_TASKID:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
-                          :[svc] "i"(SVC_INIT_GETTASKID),[args] "g"(args)
+                          :[svc] "i"(SVC_GET_TASKID),[args] "g"(args)
                           :"r0");
             return ret;
         case SVC_INIT_DONE:

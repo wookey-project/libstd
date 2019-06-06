@@ -131,7 +131,7 @@ e_syscall_ret sys_reset(void)
 e_syscall_ret sys_get_systick(uint64_t * val, e_tick_type type)
 {
     struct gen_syscall_args args = { (uint32_t) val, type, 0, 0 };
-    return do_syscall(SVC_GETTICK, &args);
+    return do_syscall(SVC_GET_TIME, &args);
 }
 
 e_syscall_ret sys_get_random(char *val, uint16_t len)
@@ -272,7 +272,7 @@ e_syscall_ret sys_init_INIT_DEVACCESS( __attribute__ ((unused)) uint32_t
 {
     struct gen_syscall_args args =
         { (uint32_t) device, (uint32_t) descriptor, 0, 0 };
-    return do_syscall(SVC_INIT_DEVACCESS, &args);
+    return do_syscall(SVC_REGISTER_DEVICE, &args);
 }
 
 e_syscall_ret sys_init_INIT_DMA( __attribute__ ((unused)) uint32_t inittype,
@@ -280,21 +280,21 @@ e_syscall_ret sys_init_INIT_DMA( __attribute__ ((unused)) uint32_t inittype,
 {
     struct gen_syscall_args args =
         { (uint32_t) dma, (uint32_t) descriptor, 0, 0 };
-    return do_syscall(SVC_INIT_DMA, &args);
+    return do_syscall(SVC_REGISTER_DMA, &args);
 }
 
 e_syscall_ret sys_init_INIT_DMA_SHM( __attribute__ ((unused)) uint32_t inittype,
                                     dma_shm_t * dmashm)
 {
     struct gen_syscall_args args = { (uint32_t) dmashm, 0, 0, 0 };
-    return do_syscall(SVC_INIT_DMA_SHM, &args);
+    return do_syscall(SVC_REGISTER_DMA_SHM, &args);
 }
 
 e_syscall_ret sys_init_INIT_GETTASKID( __attribute__ ((unused)) uint32_t
                                       inittype, char *name, uint8_t * id)
 {
     struct gen_syscall_args args = { (uint32_t) name, (uint32_t) id, 0, 0 };
-    return do_syscall(SVC_INIT_GETTASKID, &args);
+    return do_syscall(SVC_GET_TASKID, &args);
 }
 
 e_syscall_ret sys_init_INIT_DONE( __attribute__ ((unused)) uint32_t inittype)
