@@ -49,7 +49,7 @@ void do_starttask(uint32_t slot, uint32_t seed)
 
     /* End of task */
     printf("\033[37;43mEnd of task\033[37;40m\n");
-    asm volatile ("svc #1\n":::);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -65,7 +65,7 @@ void __stack_chk_fail(void)
     printf("Failed to check the stack guard ! Stack corruption !");
 
     /* End of task. NOTE: stack corruption is a serious security issue */
-    asm volatile ("svc #1\n":::);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -94,7 +94,7 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
     }
 
     /* End of ISR */
-    asm volatile ("svc #2\n":::);
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
 
     while (1) {
     };
@@ -105,13 +105,175 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
  ** the argument is used for stack access by kernel
  ** This is the arch-specific implementation of the user to supervisor switch
  */
-e_syscall_ret do_syscall( __attribute__ ((unused))
+e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
                          struct gen_syscall_args *args)
 {
     e_syscall_ret ret;
 
-    asm volatile ("svc #0\n" "str  r0, %[ret]\n":[ret] "=m"(ret)
-                  ::"r0");
-
-    return ret;
+    switch (svc) {
+        case SVC_EXIT:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_EXIT),[args] "g"(args)
+                          :"r0");
+            return ret; /* Is never executed */
+        case SVC_YIELD:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_YIELD),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GET_TIME:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GET_TIME),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_RESET:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_RESET),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_SLEEP:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_SLEEP),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GET_RANDOM:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GET_RANDOM),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_LOG:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_LOG),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_REGISTER_DEVICE:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_REGISTER_DEVICE),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_REGISTER_DMA:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_REGISTER_DMA),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_REGISTER_DMA_SHM:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_REGISTER_DMA_SHM),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GET_TASKID:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GET_TASKID),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_INIT_DONE:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_INIT_DONE),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_IPC_RECV_SYNC:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_IPC_RECV_SYNC),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_IPC_SEND_SYNC:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_IPC_SEND_SYNC),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_IPC_RECV_ASYNC:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_IPC_RECV_ASYNC),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_IPC_SEND_ASYNC:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_IPC_SEND_ASYNC),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GPIO_SET:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GPIO_SET),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GPIO_GET:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GPIO_GET),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_GPIO_UNLOCK_EXTI:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_GPIO_UNLOCK_EXTI),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DMA_RECONF:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DMA_RECONF),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DMA_RELOAD:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DMA_RELOAD),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DMA_DISABLE:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DMA_DISABLE),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DEV_MAP:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DEV_MAP),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DEV_UNMAP:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DEV_UNMAP),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_DEV_RELEASE:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_DEV_RELEASE),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_LOCK_ENTER:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_LOCK_ENTER),[args] "g"(args)
+                          :"r0");
+            return ret;
+        case SVC_LOCK_EXIT:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_LOCK_EXIT),[args] "g"(args)
+                          :"r0");
+            return ret;
+        default:
+            return SYS_E_INVAL;
+    }
 }

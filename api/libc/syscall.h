@@ -48,7 +48,6 @@ typedef enum {
 
 /** @private */
 struct gen_syscall_args {
-    uint32_t syscall;
     uint32_t reg0;
     uint32_t reg1;
     uint32_t reg2;
