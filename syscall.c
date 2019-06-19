@@ -103,6 +103,12 @@ e_syscall_ret sys_yield(void)
     return do_syscall(SVC_YIELD, &args);
 }
 
+e_syscall_ret sys_exit(void)
+{
+    struct gen_syscall_args args = { 0, 0, 0, 0 };
+    return do_syscall(SVC_EXIT, &args);
+}
+
 e_syscall_ret sys_lock(uint32_t action)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
