@@ -110,6 +110,20 @@ e_syscall_ret sys_log (logsize_t size, const char *msg);
 e_syscall_ret sys_yield(void);
 
 /**
+** \brief exiting task
+**
+** The task is exiting. Its ressources are freed. Remember that a task can't be respawned.
+** This means that the exit is definitive.
+**
+** This syscall results in the immediate scheduling of another task and the cleaning of
+** the task ressources. The task kernel context keeps some informations, including that
+** the task has exited.
+**
+** sys_exit can be called from any task context (ISR or main thread context)
+*/
+e_syscall_ret sys_exit(void);
+
+/**
 ** \brief ask for urgent board reset
 **
 ** The task requests an immediate board software reset. This will clean any secret information or data into
