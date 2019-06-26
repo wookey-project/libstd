@@ -212,8 +212,6 @@ e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI( __attribute__ ((unused)) uint32_t
     return do_syscall(SVC_GPIO_UNLOCK_EXTI, &args);
 }
 
-
-#ifdef CONFIG_KERNEL_DMA_ENABLE
 e_syscall_ret sys_cfg_CFG_DMA_RECONF( __attribute__ ((unused)) uint32_t cfgtype,
                                      dma_t * dma, dma_reconf_mask_t mask,
                                      int descriptor)
@@ -236,7 +234,6 @@ e_syscall_ret sys_cfg_CFG_DMA_DISABLE( __attribute__ ((unused)) uint32_t
     struct gen_syscall_args args = { (uint32_t) descriptor, 0, 0, 0 };
     return do_syscall(SVC_DMA_DISABLE, &args);
 }
-#endif
 
 e_syscall_ret sys_cfg_CFG_DEV_MAP( __attribute__ ((unused)) uint32_t cfgtype,
                                   uint32_t devid)
