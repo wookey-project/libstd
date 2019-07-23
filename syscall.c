@@ -34,7 +34,7 @@
 
 #ifdef __clang__
 /*** Clang/LLVM builtins ****/
-static inline void _memset(void *s, int c, uint32_t n)
+static inline __IN_SEC_VDSO void _memset(void *s, int c, uint32_t n)
 {
     char   *bytes = s;
 
@@ -46,7 +46,7 @@ static inline void _memset(void *s, int c, uint32_t n)
     return;
 }
 
-static inline void _memcpy(void *dest, const void *src, uint32_t n)
+static inline __IN_SEC_VDSO void _memcpy(void *dest, const void *src, uint32_t n)
 {
     char   *d_bytes = dest;
     const char *s_bytes = src;
@@ -61,32 +61,32 @@ static inline void _memcpy(void *dest, const void *src, uint32_t n)
     return;
 }
 
-void __aeabi_memclr(void *dest, int n)
+__IN_SEC_VDSO void __aeabi_memclr(void *dest, int n)
 {
     _memset(dest, 0, n);
 }
 
-void __aeabi_memclr4(void *dest, int n)
+__IN_SEC_VDSO void __aeabi_memclr4(void *dest, int n)
 {
     _memset(dest, 0, n);
 }
 
-void __aeabi_memclr8(void *dest, int n)
+__IN_SEC_VDSO void __aeabi_memclr8(void *dest, int n)
 {
     _memset(dest, 0, n);
 }
 
-void __aeabi_memcpy(void *dest, const void *src, uint32_t n)
+__IN_SEC_VDSO void __aeabi_memcpy(void *dest, const void *src, uint32_t n)
 {
     _memcpy(dest, src, n);
 }
 
-void __aeabi_memcpy4(void *dest, const void *src, uint32_t n)
+__IN_SEC_VDSO void __aeabi_memcpy4(void *dest, const void *src, uint32_t n)
 {
     _memcpy(dest, src, n);
 }
 
-void __aeabi_memcpy8(void *dest, const void *src, uint32_t n)
+__IN_SEC_VDSO void __aeabi_memcpy8(void *dest, const void *src, uint32_t n)
 {
     _memcpy(dest, src, n);
 }
@@ -97,19 +97,19 @@ void __aeabi_memcpy8(void *dest, const void *src, uint32_t n)
 ** Syscalls user interface implementation
 */
 
-e_syscall_ret sys_yield(void)
+__IN_SEC_VDSO e_syscall_ret sys_yield(void)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
     return do_syscall(SVC_YIELD, &args);
 }
 
-e_syscall_ret sys_exit(void)
+__IN_SEC_VDSO e_syscall_ret sys_exit(void)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
     return do_syscall(SVC_EXIT, &args);
 }
 
-e_syscall_ret sys_lock(uint32_t action)
+__IN_SEC_VDSO e_syscall_ret sys_lock(uint32_t action)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
     switch (action) {
@@ -122,31 +122,31 @@ e_syscall_ret sys_lock(uint32_t action)
     }
 }
 
-e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode)
+__IN_SEC_VDSO e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode)
 {
     struct gen_syscall_args args = { time, mode, 0, 0 };
     return do_syscall(SVC_SLEEP, &args);
 }
 
-e_syscall_ret sys_reset(void)
+__IN_SEC_VDSO e_syscall_ret sys_reset(void)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
     return do_syscall(SVC_RESET, &args);
 }
 
-e_syscall_ret sys_get_systick(uint64_t * val, e_tick_type type)
+__IN_SEC_VDSO e_syscall_ret sys_get_systick(uint64_t * val, e_tick_type type)
 {
     struct gen_syscall_args args = { (uint32_t) val, type, 0, 0 };
     return do_syscall(SVC_GET_TIME, &args);
 }
 
-e_syscall_ret sys_get_random(char *val, uint16_t len)
+__IN_SEC_VDSO e_syscall_ret sys_get_random(char *val, uint16_t len)
 {
     struct gen_syscall_args args = { (uint32_t) val, (uint32_t) len, 0, 0 };
     return do_syscall(SVC_GET_RANDOM, &args);
 }
 
-e_syscall_ret sys_log(logsize_t size, const char *msg)
+__IN_SEC_VDSO e_syscall_ret sys_log(logsize_t size, const char *msg)
 {
     struct gen_syscall_args args = { (uint32_t) size, (uint32_t) msg, 0, 0 };
     return do_syscall(SVC_LOG, &args);
@@ -156,7 +156,7 @@ e_syscall_ret sys_log(logsize_t size, const char *msg)
  * sys_ipc functions
  ************************************************/
 
-e_syscall_ret sys_ipc_IPC_SEND_SYNC( __attribute__ ((unused)) uint32_t ipctype,
+__IN_SEC_VDSO e_syscall_ret sys_ipc_IPC_SEND_SYNC( __attribute__ ((unused)) uint32_t ipctype,
                                     uint8_t receiver, logsize_t size,
                                     const char *msg)
 {
@@ -165,7 +165,7 @@ e_syscall_ret sys_ipc_IPC_SEND_SYNC( __attribute__ ((unused)) uint32_t ipctype,
     return do_syscall(SVC_IPC_SEND_SYNC, &args);
 }
 
-e_syscall_ret sys_ipc_IPC_RECV_SYNC( __attribute__ ((unused)) uint32_t ipctype,
+__IN_SEC_VDSO e_syscall_ret sys_ipc_IPC_RECV_SYNC( __attribute__ ((unused)) uint32_t ipctype,
                                     uint8_t * sender, logsize_t * size,
                                     char *msg)
 {
@@ -174,7 +174,7 @@ e_syscall_ret sys_ipc_IPC_RECV_SYNC( __attribute__ ((unused)) uint32_t ipctype,
     return do_syscall(SVC_IPC_RECV_SYNC, &args);
 }
 
-e_syscall_ret sys_ipc_IPC_SEND_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
+__IN_SEC_VDSO e_syscall_ret sys_ipc_IPC_SEND_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
                                      uint8_t receiver, logsize_t size,
                                      const char *msg)
 {
@@ -184,7 +184,7 @@ e_syscall_ret sys_ipc_IPC_SEND_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
 }
 
 
-e_syscall_ret sys_ipc_IPC_RECV_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
+__IN_SEC_VDSO e_syscall_ret sys_ipc_IPC_RECV_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
                                      uint8_t * sender, logsize_t * size,
                                      char *msg)
 {
@@ -197,28 +197,28 @@ e_syscall_ret sys_ipc_IPC_RECV_ASYNC( __attribute__ ((unused)) uint32_t ipctype,
  * sys_cfg functions
  ************************************************/
 
-e_syscall_ret sys_cfg_CFG_GPIO_SET( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_GPIO_SET( __attribute__ ((unused)) uint32_t cfgtype,
                                    uint8_t gpioref, uint8_t value)
 {
     struct gen_syscall_args args = { gpioref, value, 0, 0 };
     return do_syscall(SVC_GPIO_SET, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_GPIO_GET( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_GPIO_GET( __attribute__ ((unused)) uint32_t cfgtype,
                                    uint8_t gpioref, uint8_t * value)
 {
     struct gen_syscall_args args = { gpioref, (uint32_t) value, 0, 0 };
     return do_syscall(SVC_GPIO_GET, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI( __attribute__ ((unused)) uint32_t
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI( __attribute__ ((unused)) uint32_t
                                            cfgtype, uint8_t gpioref)
 {
     struct gen_syscall_args args = { gpioref, 0, 0, 0 };
     return do_syscall(SVC_GPIO_UNLOCK_EXTI, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_DMA_RECONF( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DMA_RECONF( __attribute__ ((unused)) uint32_t cfgtype,
                                      dma_t * dma, dma_reconf_mask_t mask,
                                      int descriptor)
 {
@@ -227,28 +227,28 @@ e_syscall_ret sys_cfg_CFG_DMA_RECONF( __attribute__ ((unused)) uint32_t cfgtype,
     return do_syscall(SVC_DMA_RECONF, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_DMA_RELOAD( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DMA_RELOAD( __attribute__ ((unused)) uint32_t cfgtype,
                                      int descriptor)
 {
     struct gen_syscall_args args = { (uint32_t) descriptor, 0, 0, 0 };
     return do_syscall(SVC_DMA_RELOAD, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_DMA_DISABLE( __attribute__ ((unused)) uint32_t
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DMA_DISABLE( __attribute__ ((unused)) uint32_t
                                       cfgtype, int descriptor)
 {
     struct gen_syscall_args args = { (uint32_t) descriptor, 0, 0, 0 };
     return do_syscall(SVC_DMA_DISABLE, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_DEV_MAP( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DEV_MAP( __attribute__ ((unused)) uint32_t cfgtype,
                                   uint32_t devid)
 {
     struct gen_syscall_args args = { devid, 0, 0, 0 };
     return do_syscall(SVC_DEV_MAP, &args);
 }
 
-e_syscall_ret sys_cfg_CFG_DEV_UNMAP( __attribute__ ((unused)) uint32_t cfgtype,
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DEV_UNMAP( __attribute__ ((unused)) uint32_t cfgtype,
                                     uint32_t devid)
 {
     struct gen_syscall_args args = { devid, 0, 0, 0 };
@@ -256,7 +256,7 @@ e_syscall_ret sys_cfg_CFG_DEV_UNMAP( __attribute__ ((unused)) uint32_t cfgtype,
 }
 
 
-e_syscall_ret sys_cfg_CFG_DEV_RELEASE( __attribute__ ((unused)) uint32_t
+__IN_SEC_VDSO e_syscall_ret sys_cfg_CFG_DEV_RELEASE( __attribute__ ((unused)) uint32_t
                                       cfgtype, uint32_t devid)
 {
     struct gen_syscall_args args = { devid, 0, 0, 0 };
@@ -269,7 +269,7 @@ e_syscall_ret sys_cfg_CFG_DEV_RELEASE( __attribute__ ((unused)) uint32_t
  * sys_init functions
  ************************************************/
 
-e_syscall_ret sys_init_INIT_DEVACCESS( __attribute__ ((unused)) uint32_t
+__IN_SEC_VDSO e_syscall_ret sys_init_INIT_DEVACCESS( __attribute__ ((unused)) uint32_t
                                       inittype, const device_t * device,
                                       int *descriptor)
 {
@@ -278,7 +278,7 @@ e_syscall_ret sys_init_INIT_DEVACCESS( __attribute__ ((unused)) uint32_t
     return do_syscall(SVC_REGISTER_DEVICE, &args);
 }
 
-e_syscall_ret sys_init_INIT_DMA( __attribute__ ((unused)) uint32_t inittype,
+__IN_SEC_VDSO e_syscall_ret sys_init_INIT_DMA( __attribute__ ((unused)) uint32_t inittype,
                                 volatile dma_t * dma, int *descriptor)
 {
     struct gen_syscall_args args =
@@ -286,21 +286,21 @@ e_syscall_ret sys_init_INIT_DMA( __attribute__ ((unused)) uint32_t inittype,
     return do_syscall(SVC_REGISTER_DMA, &args);
 }
 
-e_syscall_ret sys_init_INIT_DMA_SHM( __attribute__ ((unused)) uint32_t inittype,
+__IN_SEC_VDSO e_syscall_ret sys_init_INIT_DMA_SHM( __attribute__ ((unused)) uint32_t inittype,
                                     dma_shm_t * dmashm)
 {
     struct gen_syscall_args args = { (uint32_t) dmashm, 0, 0, 0 };
     return do_syscall(SVC_REGISTER_DMA_SHM, &args);
 }
 
-e_syscall_ret sys_init_INIT_GETTASKID( __attribute__ ((unused)) uint32_t
+__IN_SEC_VDSO e_syscall_ret sys_init_INIT_GETTASKID( __attribute__ ((unused)) uint32_t
                                       inittype, char *name, uint8_t * id)
 {
     struct gen_syscall_args args = { (uint32_t) name, (uint32_t) id, 0, 0 };
     return do_syscall(SVC_GET_TASKID, &args);
 }
 
-e_syscall_ret sys_init_INIT_DONE( __attribute__ ((unused)) uint32_t inittype)
+__IN_SEC_VDSO e_syscall_ret sys_init_INIT_DONE( __attribute__ ((unused)) uint32_t inittype)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
     return do_syscall(SVC_INIT_DONE, &args);
