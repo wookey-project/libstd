@@ -2,6 +2,7 @@
 #include "libc/stdio.h"
 #include "libc/nostd.h"
 #include "stream/stream_priv.h"
+#include "arch/cores/armv7-m/m4_syscall.h"
 
 /* Global variable holding the stack canary value */
 volatile uint32_t __stack_chk_guard = 0;
@@ -38,7 +39,7 @@ int     _main(uint32_t slot);
 #endif
 #endif
 
-void do_starttask(uint32_t slot, uint32_t seed)
+__IN_SEC_VDSO void do_starttask(uint32_t slot, uint32_t seed)
 {
     __stack_chk_guard = seed;
 
@@ -59,7 +60,7 @@ void do_starttask(uint32_t slot, uint32_t seed)
  * This function handles stack check error, corresponding to canary corruption
  * detection
  */
-void __stack_chk_fail(void)
+__IN_SEC_VDSO void __stack_chk_fail(void)
 {
     /* We have failed to check our stack canary */
     printf("Failed to check the stack guard ! Stack corruption !");
@@ -87,7 +88,7 @@ void __stack_chk_fail(void)
  ** ISR handler glue. The kernel must set the real handler @ in the
  ** stack frame to make the NVIC reload r0 with its @.
  */
-void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
+__IN_SEC_VDSO void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
 {
     if (handler) {
         handler(irq, status, data);
@@ -105,7 +106,7 @@ void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
  ** the argument is used for stack access by kernel
  ** This is the arch-specific implementation of the user to supervisor switch
  */
-e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
+__IN_SEC_VDSO e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
                          struct gen_syscall_args *args)
 {
     e_syscall_ret ret;
