@@ -32,6 +32,7 @@
 mbed_error_t queue_create(uint32_t capacity, queue_t ** queue)
 {
     queue_t *q = 0;
+    int ret;
 
     /* sanitizing */
     if (!queue) {
@@ -45,8 +46,9 @@ mbed_error_t queue_create(uint32_t capacity, queue_t ** queue)
     }
 
     /* allocating */
-    if (wmalloc((void **) &q, sizeof(queue_t), ALLOC_NORMAL) != 0) {
-        goto nomem;
+    if ((ret = wmalloc((void **) &q, sizeof(queue_t), ALLOC_NORMAL)) != 0) {
+        aprintf("[ISR] Error queue_create in malloc: %x\n", ret);
+        goto unkown;
     }
 #if QUEUE_DEBUG
     aprintf("queue address is %x\n", q);
@@ -61,15 +63,15 @@ mbed_error_t queue_create(uint32_t capacity, queue_t ** queue)
     *queue = q;
 
     return MBED_ERROR_NONE;
- nomem:
-    return MBED_ERROR_NOMEM;
+ unkown:
+    return MBED_ERROR_UNKNOWN;
  invparam:
     return MBED_ERROR_INVPARAM;
 }
 
 mbed_error_t queue_enqueue(queue_t * q, void *data)
 {
-    struct node *n;
+    struct node *n = NULL;
     int     ret;
 
     if (!q || !data) {
@@ -81,8 +83,8 @@ mbed_error_t queue_enqueue(queue_t * q, void *data)
     }
 
     if ((ret = wmalloc((void **) &n, sizeof(struct node), ALLOC_NORMAL)) != 0) {
-        aprintf("[ISR] Error in malloc: %d\n", ret);
-        return MBED_ERROR_NOMEM;
+        aprintf("[ISR] Error queue_enqueue in malloc: %x\n", ret);
+        return MBED_ERROR_UNKNOWN; 
     }
 
     /* We manipulate the queue: we need to lock it to stay thread-safe */
@@ -169,8 +171,9 @@ mbed_error_t queue_dequeue(queue_t * q, void **data)
     if (wfree((void **) &last) != 0) {
 #if QUEUE_DEBUG
         /* this error should not happend. */
-        aprintf("free failed with %x\n", ret);
+        aprintf("[ISR] free failed in queue_dequeue with %x\n", ret);
 #endif
+        ret = MBED_ERROR_UNKNOWN; 
     }
 
  nostorage:

@@ -2,10 +2,13 @@
 
 #ifdef CONFIG_STD_MALLOC
 
+
+#define RANDOM_CANARIS
+#if (CONFIG_STD_MALLOC_INTEGRITY == 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
+#include "malloc_ewok.h"
+#endif
+
 #include "malloc_priv.h"
-
-
-//#include "../inc/memfct.h"
 
 
 /* Global variables */
@@ -30,7 +33,7 @@ static u_can_t _can_sz;
 static u_can_t _can_free;
 #endif
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
 /* Semaphore */
 static volatile uint32_t _semaphore;
 #endif
@@ -68,11 +71,11 @@ void _set_wmalloc_canaries(u_can_t *can_sz, u_can_t *can_free)
 #endif
 
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
 /* Set semaphore for allocator functions */
-void _set_wmalloc_semaphore(volatile uint32_t *ptr_semaphore)
+void _set_wmalloc_semaphore(volatile uint32_t **ptr_semaphore)
 {
-    *ptr_semaphore = (physaddr_t) (&_semaphore);
+    *ptr_semaphore = (uint32_t*) (&_semaphore);
 
     return;
 }
@@ -82,10 +85,16 @@ void _set_wmalloc_semaphore(volatile uint32_t *ptr_semaphore)
 /****************************************************************************************/
 /*  Initialization of heap global variables                                             */
 /****************************************************************************************/
+volatile unsigned char allocator_initialized = 0; 
 int wmalloc_init(void)
 {
     physaddr_t task_start_heap = 0;
     uint32_t   task_heap_size  = 0;
+
+    /* If allocator already initialized, this is an error ... */
+    if(allocator_initialized == 1){
+        return -1;
+    }
 
 #ifdef CONFIG_KERNEL_EWOK
     task_start_heap = (physaddr_t) (&_e_bss);
@@ -106,8 +115,44 @@ int wmalloc_init(void)
     printf("stack end: 0x%08x\n", &_e_stack);
 #endif
 
-#ifdef CONFIG_STD_MALLOC_LIGHT
+#if defined(CONFIG_STD_MALLOC_LIGHT)
+    printf("Light allocator used!\n");
+#elif defined(CONFIG_STD_MALLOC_STD)
+    printf("EwoK hardened allocator used!\n");
+#endif
+
+#ifdef CONFIG_STD_MALLOC_INTEGRITY
+    printf("CONFIG_STD_MALLOC_INTEGRITY = %d\n", CONFIG_STD_MALLOC_INTEGRITY);
+#endif
+#ifdef CONFIG_STD_MALLOC_MUTEX
+    printf("CONFIG_STD_MALLOC_MUTEX = %d\n", CONFIG_STD_MALLOC_MUTEX);
+#endif
+#ifdef CONFIG_STD_MALLOC_CANARIS_INTEGRITY
+    printf("CONFIG_STD_MALLOC_CANARIS_INTEGRITY = %d\n", CONFIG_STD_MALLOC_CANARIS_INTEGRITY);
+#endif
+#ifdef CONFIG_STD_MALLOC_CHECK_IF_NULL
+    printf("CONFIG_STD_MALLOC_CHECK_IF_NULL = %d\n", CONFIG_STD_MALLOC_CHECK_IF_NULL);
+#endif
+#ifdef CONFIG_STD_MALLOC_BASIC_CHECKS
+    printf("CONFIG_STD_MALLOC_BASIC_CHECKS = %d\n", CONFIG_STD_MALLOC_BASIC_CHECKS);
+#endif
+#ifdef CONFIG_STD_MALLOC_DBLE_WAY_SEARCH
+    printf("CONFIG_STD_MALLOC_DBLE_WAY_SEARCH = %d\n", CONFIG_STD_MALLOC_DBLE_WAY_SEARCH);
+#endif
+#ifdef CONFIG_STD_MALLOC_ALIGN
+    printf("CONFIG_STD_MALLOC_ALIGN = %d\n", CONFIG_STD_MALLOC_ALIGN);
+#endif
+#ifdef CONFIG_STD_FREEMEM_CHECK
+    printf("CONFIG_STD_FREEMEM_CHECK = %d\n", CONFIG_STD_FREEMEM_CHECK);
+#endif
+#ifdef CONFIG_STD_MALLOC_RANDOM
+    printf("CONFIG_STD_MALLOC_RANDOM = %d\n", CONFIG_STD_MALLOC_RANDOM);
+#endif
+
+#if defined(CONFIG_STD_MALLOC_LIGHT)
     malloc_light_init(task_start_heap, (physaddr_t)task_start_heap + task_heap_size, (u__sz_t)task_heap_size);
+#elif defined(CONFIG_STD_MALLOC_STD)
+    malloc_ewok_init(task_start_heap, (physaddr_t)task_start_heap + task_heap_size, (u__sz_t)task_heap_size);
 #else
 # error "init for other malloc not done yet"
 #endif
@@ -121,7 +166,12 @@ int wmalloc_init(void)
         return -1;
     }
 
-    return _wmalloc_init(task_start_heap, task_heap_size);
+    if(_wmalloc_init(task_start_heap, task_heap_size)){
+        return -1;
+    }
+
+    allocator_initialized = 1;
+    return 0;
 }
 
 
@@ -159,7 +209,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     _heap_size  = (u__sz_t)    task_heap_size;
     _end_heap   = (physaddr_t) (task_start_heap + task_heap_size);
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Locking of wmalloc usage */
     semaphore_init(1, &_semaphore);
 
@@ -172,10 +222,16 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 #endif
 
     /* Definition of canaries */
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
 # ifdef RANDOM_CANARIS
-    _can_sz     = (u_can_t) rand();
-    _can_free   = (u_can_t) rand();
+    if(get_random((unsigned char*) &_can_sz, sizeof(u_can_t)) != MBED_ERROR_NONE){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+    if(get_random((unsigned char*) &_can_free, sizeof(u_can_t)) != MBED_ERROR_NONE){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
 # else
     _can_sz     = (u_can_t) 0xF0F0F0F0;
     _can_free   = (u_can_t) 0x0F0F0F0F;
@@ -191,7 +247,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     b_0->flag       = 0;
     b_0->prv_free   = HDR_FREE_SZ;
     b_0->nxt_free   = HDR_FREE_SZ;
-# if CANARIS_INTEGRITY == 1
+#if (CONFIG_STD_MALLOC_INTEGRITY >= 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
     UPDATE_CANARI_BOTH(b_0);
 # endif
 
@@ -204,11 +260,11 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     b_1->flag       = 0;
     b_1->prv_free   = 0;
     b_1->nxt_free   = 0;
-# if CANARIS_INTEGRITY == 1
+#if (CONFIG_STD_MALLOC_INTEGRITY >= 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
     UPDATE_CANARI_BOTH(b_1);
 # endif
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage */
     if (!semaphore_release(&_semaphore)) {
         malloc_errno = EHEAPSEMAPHORE;

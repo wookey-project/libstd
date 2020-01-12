@@ -1,5 +1,5 @@
-#ifndef H_MALLOC_EWOK
-#define H_MALLOC_EWOK
+#ifndef H_MALLOC_INIT
+#define H_MALLOC_INIT
 
 #include "autoconf.h"
 

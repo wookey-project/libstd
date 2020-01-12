@@ -10,8 +10,12 @@
 #include "malloc_priv.h"
 #include "malloc_init.h"
 
-//#include "../inc/memfct.h"
+#if CONFIG_STD_MALLOC_MUTEX == 1
+extern void _set_wmalloc_semaphore(volatile uint32_t **ptr_semaphore);
+#endif
+extern void _set_wmalloc_heap(physaddr_t *start_heap, physaddr_t *end_heap, u__sz_t *heap_size);
 
+extern volatile unsigned char allocator_initialized;
 
 /* Global variables */
 
@@ -20,9 +24,9 @@ static physaddr_t _start_heap;
 static physaddr_t _end_heap;
 static u__sz_t    _heap_size;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
 /* Semaphore */
-volatile uint32_t _ptr_semaphore;
+static volatile uint32_t *_ptr_semaphore;
 #endif
 
 
@@ -45,8 +49,8 @@ void malloc_light_init(physaddr_t start_heap,
     _end_heap = end_heap;
     _heap_size = heap_size;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
-    _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
+#if CONFIG_STD_MALLOC_MUTEX == 1
+    _set_wmalloc_semaphore(&_ptr_semaphore);
 #endif
 }
 
@@ -59,6 +63,11 @@ int wmalloc(void **ptr_to_alloc, const uint16_t len, const int flag)
 int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #endif
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     void *ptr                   = NULL;
 
     u__sz_t len_bis             = (u__sz_t) len;
@@ -77,9 +86,9 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     /* Errno is initialized to zero */
     malloc_errno = 0;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Trying to lock of wmalloc usage */
-    if (!semaphore_trylock(&_ptr_semaphore)) {
+    if (!semaphore_trylock(_ptr_semaphore)) {
         malloc_errno = EHEAPLOCKED;
         return -1;
     }
@@ -181,9 +190,9 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
             /**********************************************************/
             *ptr_to_alloc = ptr;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
             /* Unlocking of wmalloc usage */
-            if (!semaphore_release(&_ptr_semaphore)) {
+            if (!semaphore_release(_ptr_semaphore)) {
                 malloc_errno = EHEAPSEMAPHORE;
                 return -1;
             }
@@ -211,10 +220,10 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
 end_error:
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
-    semaphore_release(&_ptr_semaphore);
+    semaphore_release(_ptr_semaphore);
 #endif
 
     return -1;
@@ -264,6 +273,11 @@ static int _unlink(struct block *b_cur)
 /****************************************************************************************/
 int wfree(void **ptr_to_free)
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     struct block *b_0   = (struct block *) _start_heap;
     struct block *b_1   = b_0 + 1;
 
@@ -276,11 +290,11 @@ int wfree(void **ptr_to_free)
     /* Errno is initialized to zero */
     malloc_errno = 0;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     _set_wmalloc_semaphore(&_ptr_semaphore);
 
     /* Locking of wmalloc usage */
-    if (!semaphore_trylock(&_ptr_semaphore)) {
+    if (!semaphore_trylock(_ptr_semaphore)) {
         malloc_errno = EHEAPLOCKED;
         return -1;
     }
@@ -410,9 +424,9 @@ int wfree(void **ptr_to_free)
 
 end:
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage */
-    if (!semaphore_release(&_ptr_semaphore)) {
+    if (!semaphore_release(_ptr_semaphore)) {
         malloc_errno = EHEAPSEMAPHORE;
         return -1;
     }
@@ -422,10 +436,10 @@ end:
 
 end_error:
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
-    semaphore_release(&_ptr_semaphore);
+    semaphore_release(_ptr_semaphore);
 #endif
 
     return -1;
@@ -499,6 +513,11 @@ static void *_safe_flood_char(void *dest, const char c, uint32_t n)
 #ifdef PRINT_HEAP
 int print_heap(void)
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     struct block *b_0 = (struct block *) _start_heap;
     struct block *b_cur = NULL;
 

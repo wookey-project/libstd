@@ -92,7 +92,7 @@
 
 /* Integrity checking mode */
 
-#define HEAP_INTEGRITY_CHECKING     1   /* Define the mode of integrity checking:
+#define HEAP_INTEGRITY_CHECKING     3   /* Define the mode of integrity checking:
                                            0 - no integrity checking
                                            1 - integrity checking of each header to be read
                                            2 - integrity of all free blocks' headers at each

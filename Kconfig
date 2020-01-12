@@ -107,6 +107,14 @@ config STD_MALLOC_RANDOM
    ---help---
       TODO: Christophe
 
+config STD_MALLOC_CANARIS_INTEGRITY
+   int "allocator canaries integrity check"
+   range 0 2
+   depends on STD_MALLOC_STD || STD_MALLOC_BINS
+   default 1
+   ---help---
+      TODO: Christophe
+
 endif
 
 endmenu
