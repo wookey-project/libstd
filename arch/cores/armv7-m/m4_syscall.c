@@ -71,35 +71,6 @@ void __stack_chk_fail(void)
     };
 }
 
-#if __clang__
-#pragma clang optimize on
-#if __clang_major__ > 7
-#pragma clang attribute pop
-#endif
-#endif
-
-#if __GNUC__
-#pragma GCC pop_options
-#endif
-
-/**
- ** \private
- ** ISR handler glue. The kernel must set the real handler @ in the
- ** stack frame to make the NVIC reload r0 with its @.
- */
-void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
-{
-    if (handler) {
-        handler(irq, status, data);
-    }
-
-    /* End of ISR */
-    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
-
-    while (1) {
-    };
-}
-
 /**
  ** \private
  ** the argument is used for stack access by kernel
@@ -277,3 +248,32 @@ e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
             return SYS_E_INVAL;
     }
 }
+
+/**
+ ** \private
+ ** ISR handler glue. The kernel must set the real handler @ in the
+ ** stack frame to make the NVIC reload r0 with its @.
+ */
+void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
+{
+    if (handler) {
+        handler(irq, status, data);
+    }
+
+    /* End of ISR */
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
+
+    while (1) {
+    };
+}
+
+#if __clang__
+#pragma clang optimize on
+#if __clang_major__ > 7
+#pragma clang attribute pop
+#endif
+#endif
+
+#if __GNUC__
+#pragma GCC pop_options
+#endif
