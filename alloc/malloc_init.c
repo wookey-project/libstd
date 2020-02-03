@@ -128,6 +128,16 @@ int wmalloc_init(void)
 /****************************************************************************************/
 /*  Initialization of heap global variables                                             */
 /****************************************************************************************/
+/*
+ * INFO: Here, we handle _e_bss as the end address of the BSS (HEAP start) in memory.
+ * This is not an effective data content but a void memory block from which the heap
+ * is hanled. This variable is extern and loaded from the application ldscript, making
+ * gcc generating a false positive in its way to handle this address as uint32_t[1]
+ * This is *not* an error.
+ * Gcc 9 warning is a false positive.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_heap_size)
 {
     uint32_t heap_size_tmp = task_heap_size;
@@ -218,6 +228,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 
     return 0;
 }
+#pragma GCC diagnostic pop
 
 
 #endif
