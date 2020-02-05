@@ -28,7 +28,7 @@ CFLAGS := $(LIBS_CFLAGS)
 # purged at strip time by the compiler.
 # This flag block any attempt to delete unused symbols from the object file as they may be
 # called from the kernel
-CFLAGS += -I. -Iarch/cores/$(CONFIG_ARCH) -MMD -MP
+CFLAGS += -I. -Iarch/cores/$(CONFIG_ARCH) -MMD -MP  -Warray-bounds=0
 # this is specific to libstd, as this lib hold the task entrypoints (do_startisr and do_starttask)
 # which whould be overriden by the -Wl,gc -ffunction-sections
 CFLAGS += -fno-function-sections
