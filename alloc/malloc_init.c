@@ -13,6 +13,8 @@
 /* Extern global variables */
 extern uint32_t _s_bss;
 extern uint32_t _e_bss;
+extern uint32_t _s_heap;
+extern uint32_t _e_heap;
 extern uint32_t _s_data;
 extern uint32_t _e_data;
 extern uint32_t _s_stack;
@@ -90,18 +92,8 @@ int wmalloc_init(void)
 
 #ifdef CONFIG_KERNEL_EWOK
     task_start_heap = (physaddr_t) (&_e_bss);
+    task_heap_size = (physaddr_t)&_e_heap - task_start_heap;
 
-#if 0    
-task_heap_size  = (uint32_t) (((uint32_t) CONFIG_RAM_SLOT_SIZE * (uint32_t) &numslots) - \
-                                  ((uint32_t) &_e_stack - (uint32_t) &_s_stack) - \
-                                  ((uint32_t) &_e_data  - (uint32_t) &_s_data) - \
-                                  ((uint32_t) &_e_bss   - (uint32_t) &_s_bss));
-#else
-    task_heap_size  = (uint32_t) (((uint32_t)&heapsize) - \
-                                  ((uint32_t) &_e_stack - (uint32_t) &_s_stack) - \
-                                  ((uint32_t) &_e_data  - (uint32_t) &_s_data) - \
-                                  ((uint32_t) &_e_bss   - (uint32_t) &_s_bss));
-#endif
 #if 1 /* for debug purpose */
     printf("heap start: 0x%08x\n", task_start_heap);
     printf("heap size: 0x%06x\n", task_heap_size);
