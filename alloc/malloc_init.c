@@ -99,7 +99,7 @@ int wmalloc_init(void)
 #ifdef CONFIG_KERNEL_EWOK
     task_start_heap = (physaddr_t) (&_e_bss);
     task_heap_size = (physaddr_t)&_e_heap - task_start_heap;
-    if (task_heap_size) {
+    if (task_heap_size == 0) {
         printf("No heap declared in this task ! check your configuration\n");
         return -1;
     }
