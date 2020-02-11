@@ -39,6 +39,12 @@ static volatile uint32_t _semaphore;
 #endif
 
 
+static volatile bool malloc_initialized = false;
+
+bool is_malloc_initialized(void) {
+    return malloc_initialized;
+}
+
 /* Static functions prototypes */
 static int _wmalloc_init(physaddr_t const task_start_heap, uint32_t const task_heap_size);
 
@@ -93,6 +99,10 @@ int wmalloc_init(void)
 #ifdef CONFIG_KERNEL_EWOK
     task_start_heap = (physaddr_t) (&_e_bss);
     task_heap_size = (physaddr_t)&_e_heap - task_start_heap;
+    if (task_heap_size) {
+        printf("No heap declared in this task ! check your configuration\n");
+        return -1;
+    }
 
 #if 1 /* for debug purpose */
     printf("heap start: 0x%08x\n", task_start_heap);
@@ -227,6 +237,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     }
 #endif
 
+    malloc_initialized = true;
     return 0;
 }
 #pragma GCC diagnostic pop
