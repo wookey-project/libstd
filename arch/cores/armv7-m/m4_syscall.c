@@ -35,7 +35,7 @@ int     _main(uint32_t slot);
 #pragma clang optimize off
   /* Well, clang support local stack protection deactivation only since v8 :-/ */
 #if __clang_major__ > 7
-#pragma clang attribute push(__attribute__((no_stack_protector)), apply_to = do_starttask)
+#pragma clang attribute push(__attribute__((no_stack_protector)))
 #endif
 #endif
 
@@ -71,17 +71,6 @@ __IN_SEC_VDSO void __stack_chk_fail(void)
     while (1) {
     };
 }
-
-#if __clang__
-#pragma clang optimize on
-#if __clang_major__ > 7
-#pragma clang attribute pop
-#endif
-#endif
-
-#if __GNUC__
-#pragma GCC pop_options
-#endif
 
 /**
  ** \private
@@ -278,3 +267,15 @@ __IN_SEC_VDSO e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
             return SYS_E_INVAL;
     }
 }
+
+#if __clang__
+#pragma clang optimize on
+#if __clang_major__ > 7
+#pragma clang attribute pop
+#endif
+#endif
+
+#if __GNUC__
+#pragma GCC pop_options
+#endif
+
