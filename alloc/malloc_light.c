@@ -1,5 +1,5 @@
 /* Author: Christophe GUNST (christop.gh@gmail.com)
- * 
+ *
  * (implementation of an allocator for the WooKey project)
  */
 
@@ -75,7 +75,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     u__sz_t cur_free_sz         = 0;
 
     struct block *b_0 = (struct block *) _start_heap;
-    struct block *b_cur         = NXT_FREE(b_0);
+    struct block *b_cur         = 0;
     struct block *b_nxt_now     = NULL;
     struct block *b_nxt_int     = NULL;
 
@@ -85,6 +85,10 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     /* Errno is initialized to zero */
     malloc_errno = 0;
+  
+    if (!is_malloc_initialized()) {
+        return -1;
+    }
 
 #if CONFIG_STD_MALLOC_MUTEX == 1
     /* Trying to lock of wmalloc usage */
@@ -289,6 +293,11 @@ int wfree(void **ptr_to_free)
 
     /* Errno is initialized to zero */
     malloc_errno = 0;
+
+    if (!is_malloc_initialized()) {
+        return -1;
+    }
+  
 
 #if CONFIG_STD_MALLOC_MUTEX == 1
     _set_wmalloc_semaphore(&_ptr_semaphore);

@@ -16,11 +16,14 @@
 /* Extern global variables */
 extern uint32_t _s_bss;
 extern uint32_t _e_bss;
+extern uint32_t _s_heap;
+extern uint32_t _e_heap;
 extern uint32_t _s_data;
 extern uint32_t _e_data;
 extern uint32_t _s_stack;
 extern uint32_t _e_stack;
 extern uint32_t numslots;
+extern uint32_t heapsize;
 
 /* Heap specifications */
 static physaddr_t _start_heap;
@@ -38,6 +41,12 @@ static u_can_t _can_free;
 static volatile uint32_t _semaphore;
 #endif
 
+
+static volatile bool malloc_initialized = false;
+
+bool is_malloc_initialized(void) {
+    return malloc_initialized;
+}
 
 /* Static functions prototypes */
 static int _wmalloc_init(physaddr_t const task_start_heap, uint32_t const task_heap_size);
@@ -98,15 +107,17 @@ int wmalloc_init(void)
 
 #ifdef CONFIG_KERNEL_EWOK
     task_start_heap = (physaddr_t) (&_e_bss);
+    task_heap_size = (physaddr_t)&_e_heap - task_start_heap;
+    if (task_heap_size == 0) {
+        printf("No heap declared in this task ! check your configuration\n");
+        return -1;
+    }
 
-    task_heap_size  = (uint32_t) (((uint32_t) CONFIG_RAM_SLOT_SIZE * (uint32_t) &numslots) - \
-                                  ((uint32_t) &_e_stack - (uint32_t) &_s_stack) - \
-                                  ((uint32_t) &_e_data  - (uint32_t) &_s_data) - \
-                                  ((uint32_t) &_e_bss   - (uint32_t) &_s_bss));
 #if 1 /* for debug purpose */
     printf("heap start: 0x%08x\n", task_start_heap);
     printf("heap size: 0x%06x\n", task_heap_size);
-    printf("num slots: 0x%02d\n", &numslots);
+    printf("num slots: 0x%02d\n", &heapsize);
+    //printf("num slots: 0x%02d\n", &numslots);
     printf("data start: 0x%08x\n", &_s_data);
     printf("data end: 0x%08x\n", &_e_data);
     printf("bss start: 0x%08x\n", &_s_bss);
@@ -178,6 +189,16 @@ int wmalloc_init(void)
 /****************************************************************************************/
 /*  Initialization of heap global variables                                             */
 /****************************************************************************************/
+/*
+ * INFO: Here, we handle _e_bss as the end address of the BSS (HEAP start) in memory.
+ * This is not an effective data content but a void memory block from which the heap
+ * is hanled. This variable is extern and loaded from the application ldscript, making
+ * gcc generating a false positive in its way to handle this address as uint32_t[1]
+ * This is *not* an error.
+ * Gcc 9 warning is a false positive.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_heap_size)
 {
     uint32_t heap_size_tmp = task_heap_size;
@@ -272,8 +293,10 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     }
 #endif
 
+    malloc_initialized = true;
     return 0;
 }
+#pragma GCC diagnostic pop
 
 
 #endif

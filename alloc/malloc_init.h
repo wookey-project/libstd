@@ -10,6 +10,8 @@
 
 int wmalloc_init(void);
 
+bool is_malloc_initialized(void);
+
 void _set_wmalloc_heap(physaddr_t *start_heap, physaddr_t *end_heap, u__sz_t *heap_size);
 
 #if CONFIG_STD_MALLOC_INTEGRITY >= 1
