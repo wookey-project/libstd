@@ -12,7 +12,8 @@
 
 #include "malloc_priv.h"
 
-
+#define SUM_VERSION 2
+#define HEAP_SIZE_LEN CONFIG_STD_MALLOC_SIZE_LEN
 
 /* Chunk structure :
  * - size and and previous chunk's size
@@ -21,7 +22,7 @@
  */
 /*#pragma pack (1)*/
 struct __attribute__((packed)) block {
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     u_can_t can_sz;
 #endif
     u_flg_t flag;
@@ -29,13 +30,13 @@ struct __attribute__((packed)) block {
     u__sz_t sz;
     u_off_t prv_free;  /* Only for free blocks: relative address */
     u_off_t nxt_free;  /* Only for free blocks: relative address */
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     u_can_t can_free;
 #endif
 };
 
 struct __attribute__((packed)) alloc_block {
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     u_can_t can_sz;
 #endif
     u_flg_t flag;
@@ -109,7 +110,7 @@ struct __attribute__((packed)) alloc_block {
 
 /* Canaries mamangement */
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
 
 #define CAN_SHIFT               HEAP_SIZE_LEN
 
@@ -173,7 +174,7 @@ struct __attribute__((packed)) alloc_block {
 # define INCREASE_SZ_FREE(l)    SZ_FREE() = (u__sz_t)(SZ_FREE() + (l))
 # define DECREASE_SZ_FREE(l)    SZ_FREE() = (u__sz_t)(SZ_FREE() - (l))
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
 
 # define INC_NB_SZ_FREE(l)      INCREASE_SZ_FREE(l); \
                                     INCREASE_NB_FREE(); \
@@ -186,6 +187,9 @@ struct __attribute__((packed)) alloc_block {
 
 #endif
 
+void malloc_ewok_init(physaddr_t start_heap,
+                       physaddr_t end_heap,
+                       u__sz_t    heap_size);
 
 #endif
 #endif

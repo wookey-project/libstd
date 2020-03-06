@@ -37,7 +37,9 @@
 static inline __IN_SEC_VDSO void _memset(void *s, int c, uint32_t n)
 {
     char   *bytes = s;
-
+    if(s == NULL){
+        return;
+    }
     while (n) {
         *bytes = c;
         bytes++;
@@ -51,6 +53,9 @@ static inline __IN_SEC_VDSO void _memcpy(void *dest, const void *src, uint32_t n
     char   *d_bytes = dest;
     const char *s_bytes = src;
 
+    if((dest == NULL) || (src == NULL)){
+       return;
+    }
     while (n) {
         *d_bytes = *s_bytes;
         d_bytes++;

@@ -9,9 +9,13 @@
 
 #include "malloc_priv.h"
 
-//#include "../inc/memfct.h"
 
+#if CONFIG_STD_MALLOC_MUTEX == 1
+extern void _set_wmalloc_semaphore(volatile uint32_t **ptr_semaphore);
+#endif
+extern void _set_wmalloc_heap(physaddr_t *start_heap, physaddr_t *end_heap, u__sz_t *heap_size);
 
+extern volatile unsigned char allocator_initialized;
 
 /* Global variables */
 
@@ -21,12 +25,15 @@ static physaddr_t _end_heap;
 static u__sz_t    _heap_size;
 
 /* Canaries (random or not) */
+#if (CONFIG_STD_MALLOC_INTEGRITY >= 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
 static u_can_t _can_sz;
 static u_can_t _can_free;
+extern void _set_wmalloc_canaries(u_can_t *can_sz, u_can_t *can_free);
+#endif
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
 /* Semaphore */
-static uint32_t _ptr_semaphore;
+static volatile uint32_t *_ptr_semaphore;
 #endif
 
 
@@ -65,6 +72,23 @@ static int check_free(struct block *b, uint16_t flag);
 static int check_consistency(struct block * b, uint16_t flag);
 #endif
 
+/*
+ * This function should be called by malloc_init() to
+ * initialize local heap informations
+ */
+void malloc_ewok_init(physaddr_t start_heap,
+                       physaddr_t end_heap,
+                       u__sz_t    heap_size)
+{
+    _start_heap = start_heap;
+    _end_heap = end_heap;
+    _heap_size = heap_size;
+
+#if CONFIG_STD_MALLOC_MUTEX == 1
+    _set_wmalloc_semaphore(&_ptr_semaphore);
+#endif
+}
+
 
 /*********************************************************************************************/
 /*  Malloc() function                                                                        */
@@ -75,6 +99,11 @@ int wmalloc(void **ptr_to_alloc, const uint16_t len, const int flag)
 int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #endif
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     void *ptr                   = NULL;
 
     u__sz_t len_bis             = (u__sz_t) len;
@@ -91,12 +120,17 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     uint8_t insered_block       = 0;
 
-#if STD_FREEMEM_CHECK >= 1
+#if CONFIG_STD_FREEMEM_CHECK >= 1
     u__sz_t memory_available   = 0;
 #endif
 
-#ifdef CONFIG_STD_MALLOC_RANDOM
-    int32_t random = (NB_FREE() ? (int32_t) (- ((uint8_t) ((uint32_t)rand() % NB_FREE()))) : 0);
+#if CONFIG_STD_MALLOC_RANDOM == 1
+    uint32_t tmp;
+    if(get_random((unsigned char*) &tmp, sizeof(tmp)) != MBED_ERROR_NONE){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+    int32_t random = (NB_FREE() ? (int32_t) (- ((uint8_t) (tmp % NB_FREE()))) : 0);
 #else
     int32_t random = 0;
 #endif
@@ -104,11 +138,11 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     /* Errno is initialized to zero */
     malloc_errno = 0;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
-    _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
+#if CONFIG_STD_MALLOC_MUTEX == 1
+    _set_wmalloc_semaphore(&_ptr_semaphore);
 
     /* Trying to lock of wmalloc usage */
-    if (!semaphore_trylock(&semaphore)) {
+    if (!semaphore_trylock(_ptr_semaphore)) {
         malloc_errno = EHEAPLOCKED;
         return -1;
     }
@@ -116,7 +150,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     /* Getting of heap specification values */
     _set_wmalloc_heap(&_start_heap, &_end_heap, &_heap_size);
-#if (CONFIG_STD_MALLOC_INTEGRITY == 1) && (CANARIS_INTEGRITY == 1)
+#if (CONFIG_STD_MALLOC_INTEGRITY >= 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
     _set_wmalloc_canaries(&_can_sz, &_can_free);
 #endif
 
@@ -143,7 +177,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #elif CONFIG_STD_MALLOC_BASIC_CHECKS == 1
     /* We check b_cur (and eventually b_cur_bis) are not out of range */
 #  if CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 1
-    if ((OFFSET(b_cur) > OFFSET_MAX) || (OFFSET(_cur_bis) > OFFSET_MAX)) {
+    if ((OFFSET(b_cur) > OFFSET_MAX) || (OFFSET(b_cur_bis) > OFFSET_MAX)) {
 #  elif CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
     if ((OFFSET(b_cur) > OFFSET_MAX)) {
 #  endif
@@ -171,7 +205,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     /* Block size is calculated */
     sz = (u__sz_t) (len_bis + HDR_SZ);
 
-#if STD_FREEMEM_CHECK >= 1
+#if CONFIG_STD_FREEMEM_CHECK >= 1
     /* We check if there is definitively not enough memory for block */
     memory_available = (u__sz_t) (SZ_FREE() - (u__sz_t)(HDR_FREE_SZ * (NB_FREE() - 1)));
     if (sz > memory_available) {
@@ -211,7 +245,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 }
 #endif
 
-#if CONFIG_STD_MALLOC_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_INTEGRITY >= 1
                 /* We check the integrity of the header (if no heap integrity checking) */
                 if (check_hdr(b_cur, CHECK_ALL_FREE)) {
                     malloc_errno = EHEAPINTEGRITY;
@@ -236,7 +270,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 /* Current free block is updated and changed to allocated block */
                 b_cur->sz = sz;
                 MAKE_ALLOC(b_cur);
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
                 UPDATE_CANARI_SZ(b_cur);
 #endif
 
@@ -259,7 +293,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                  * next block's "prv_sz" is completed with the current block's size */
                 if ((physaddr_t) b_nxt_now != _end_heap) {
                     b_nxt_now->prv_sz = (insered_block ? SIZE(b_nxt_int) : sz);
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
                     UPDATE_CANARI_GENE(b_nxt_now);
 #endif
                 }
@@ -271,7 +305,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 } else {
                     b_cur->prv_free = 0;
                     b_cur->nxt_free = 0;
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
                     b_cur->can_free = 0;
 #endif
                 }
@@ -279,7 +313,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 /* Increase the field "prv_free" of b_0 (total size of allocated memory) */
                 DECREASE_SZ_FREE(sz);
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
                 /* b_0 first canari are updated for taking into account the modification of
                  * b_0->prv_sz = NB_FREE() and b_0->sz = SZ_FREE() */
                 UPDATE_CANARI_SZ(b_0);
@@ -291,9 +325,9 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 /**********************************************************/
                 *ptr_to_alloc = ptr;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
                 /* Unlocking of wmalloc usage */
-                if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
+                if (!semaphore_release(_ptr_semaphore)) {
                     malloc_errno = EHEAPSEMAPHORE;
                     return -1;
                 }
@@ -304,7 +338,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 /**********************************************************/
             }
 
-#if STD_FREEMEM_CHECK == 2
+#if CONFIG_STD_FREEMEM_CHECK == 2
             /* We check if there is definitively not enough memory for block */
 # if CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
             memory_available -= (u__sz_t)(b_cur->sz - HDR_FREE_SZ);
@@ -360,10 +394,10 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
 end_error:
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
-    semaphore_release((uint32_t *) _ptr_semaphore);
+    semaphore_release(_ptr_semaphore);
 #endif
 
     return -1;
@@ -380,7 +414,7 @@ static int _update_inter_free(struct block *b_cur, struct block *b_nxt_int, u__s
     b_nxt_int->prv_free = b_cur->prv_free;
     b_nxt_int->nxt_free = b_cur->nxt_free;
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     UPDATE_CANARI_BOTH(b_nxt_int);
 #endif
 
@@ -388,7 +422,7 @@ static int _update_inter_free(struct block *b_cur, struct block *b_nxt_int, u__s
     BLOCK(b_cur->prv_free)->nxt_free = OFFSET(b_nxt_int);
     BLOCK(b_cur->nxt_free)->prv_free = OFFSET(b_nxt_int);
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     UPDATE_CANARI_FREE(PRV_FREE(b_nxt_int));
     UPDATE_CANARI_FREE(NXT_FREE(b_nxt_int));
 #endif
@@ -404,7 +438,7 @@ static int _unlink(struct block *b_cur)
     BLOCK(b_cur->prv_free)->nxt_free = b_cur->nxt_free;
     BLOCK(b_cur->nxt_free)->prv_free = b_cur->prv_free;
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     UPDATE_CANARI_FREE(PRV_FREE(b_cur));
     UPDATE_CANARI_FREE(NXT_FREE(b_cur));
 #endif
@@ -427,6 +461,11 @@ static int _unlink(struct block *b_cur)
 /****************************************************************************************/
 int wfree(void **ptr_to_free)
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     struct block *b_0   = (struct block *) _start_heap;
     struct block *b_1   = b_0 + 1;
 
@@ -439,11 +478,11 @@ int wfree(void **ptr_to_free)
     /* Errno is initialized to zero */
     malloc_errno = 0;
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
-    _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
+#if CONFIG_STD_MALLOC_MUTEX == 1
+    _set_wmalloc_semaphore(&_ptr_semaphore);
 
     /* Locking of wmalloc usage */
-    if (!semaphore_trylock(&semaphore)) {
+    if (!semaphore_trylock(_ptr_semaphore)) {
         malloc_errno = EHEAPLOCKED;
         return -1;
     }
@@ -451,7 +490,7 @@ int wfree(void **ptr_to_free)
 
     /* Getting of heap specification values */
     _set_wmalloc_heap(&_start_heap, &_end_heap, &_heap_size);
-#if (CONFIG_STD_MALLOC_INTEGRITY == 1) && (CANARIS_INTEGRITY == 1)
+#if (CONFIG_STD_MALLOC_INTEGRITY >= 1) && (CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1)
     _set_wmalloc_canaries(&_can_sz, &_can_free);
 #endif
 
@@ -530,7 +569,7 @@ int wfree(void **ptr_to_free)
 
             /* Last block updated (size increased) */
             b_prv->sz = (u__sz_t) (SIZE(b_prv) + SIZE(b_cur));
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
             UPDATE_CANARI_SZ(b_prv);
 #endif
 
@@ -570,14 +609,14 @@ int wfree(void **ptr_to_free)
             if (!(merged & MERGED_WITH_PRV)) {
                 b_cur->prv_free = b_nxt->prv_free;
                 PRV_FREE(b_cur)->nxt_free = OFFSET(b_cur);
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
                 UPDATE_CANARI_FREE(PRV_FREE(b_cur));
 #endif
             }
 
             b_cur->nxt_free = b_nxt->nxt_free;
             NXT_FREE(b_cur)->prv_free = OFFSET(b_cur);
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
             UPDATE_CANARI_FREE(NXT_FREE(b_cur));
 #endif
 
@@ -587,14 +626,14 @@ int wfree(void **ptr_to_free)
     }
 
     /* Canari_1 is updated */
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     UPDATE_CANARI_BOTH(b_cur);
 #endif
 
     /* If the updated block is not the final one, the next block is updated (prv_sz) */
     if (NOT_LAST_BLOCK(b_cur)) {
         ((struct block *) ((physaddr_t) b_cur + b_cur->sz))->prv_sz = b_cur->sz;
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
         UPDATE_CANARI_SZ((struct block *)((physaddr_t) b_cur + b_cur->sz));
 #endif
     }
@@ -623,15 +662,15 @@ int wfree(void **ptr_to_free)
 
 end:
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     /* b_0 first canari are updated for taking into account the modification of
      * b_0->prv_sz = NB_FREE() and b_0->sz = SZ_FREE() */
     UPDATE_CANARI_SZ(b_0);
 #endif
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage */
-    if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
+    if (!semaphore_release(_ptr_semaphore)) {
         malloc_errno = EHEAPSEMAPHORE;
         return -1;
     }
@@ -641,10 +680,10 @@ end:
 
 end_error:
 
-#ifdef CONFIG_STD_MALLOC_MUTEX
+#if CONFIG_STD_MALLOC_MUTEX == 1
     /* Unlocking of wmalloc usage (malloc_errno is not modified in order to keep the value
      * of the initial error) */
-    semaphore_release((uint32_t *) _ptr_semaphore);
+    semaphore_release(_ptr_semaphore);
 #endif
 
     return -1;
@@ -697,7 +736,7 @@ static int _link(struct block *b_cur, struct block *b_0)
     b_prv->nxt_free = o_cur;
     b_nxt->prv_free = o_cur;
 
-#if CANARIS_INTEGRITY != 0
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY != 0
     /* Canaris are updated */
     UPDATE_CANARI_FREE(b_cur);
     UPDATE_CANARI_FREE(b_prv);
@@ -737,7 +776,7 @@ static void __attribute__((optimize("O0"))) *_safe_flood_char(void *dest, const 
 /*  Checking of the heap's integrity                                                    */
 /****************************************************************************************/
 #if CONFIG_STD_MALLOC_INTEGRITY >= 2
-int _heap_integrity(void)
+static int _heap_integrity(void)
 {
     struct block *b_0   = (struct block *) _start_heap;
     struct block *b_cur = b_0 + 1;
@@ -872,7 +911,7 @@ static inline int check_alloc_headers(void)
             }
         }
 
-#if (CANARIS_INTEGRITY + SZ_VAL_INTEGRITY) == 0
+#if (CONFIG_STD_MALLOC_CANARIS_INTEGRITY + SZ_VAL_INTEGRITY) == 0
         if (SIZE_SECU(b_cur) == 0) {
             error = INTEGRITY_SZ;
             goto out;
@@ -905,7 +944,7 @@ static int check_hdr(struct block *b, u__sz_t flag)
         return INTEGRITY_FLAG;
     }
 
-#if CANARIS_INTEGRITY == 1
+#if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 1
     if (flag & CHECK_CANARI) {
         if (BAD_CANARI(b)) {
             return INTEGRITY_CANARI;
@@ -1004,7 +1043,7 @@ static int check_consistency(struct block * b, u__sz_t flag)
 {
     if (flag & CHECK_SZ_EQ_PRV) {
         if (NOT_FIRST_BLOCK(b)) {
-# if CANARIS_INTEGRITY == 0
+# if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 0
             if (b->prv_sz != SIZE(PREV_SECU(b))) {
 # else
             if (b->prv_sz != SIZE(PREV(b))) {
@@ -1016,7 +1055,7 @@ static int check_consistency(struct block * b, u__sz_t flag)
 
     if (flag & CHECK_SZ_EQ_NXT) {
         if (NOT_LAST_BLOCK(b)) {
-# if CANARIS_INTEGRITY == 0
+# if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 0
             if (SIZE(b) != NEXT_SECU(b)->prv_sz) {
 # else
             if (SIZE(b) != NEXT(b)->prv_sz) {
@@ -1031,7 +1070,7 @@ static int check_consistency(struct block * b, u__sz_t flag)
     }
 
     if (flag & CHECK_FREE_EQ_PRV) {
-# if CANARIS_INTEGRITY == 0
+# if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 0
         if (NXT_FREE_SECU((PRV_FREE_SECU(b))) != b) {
 # else
         if (NXT_FREE(PRV_FREE(b)) != b) {
@@ -1041,7 +1080,7 @@ static int check_consistency(struct block * b, u__sz_t flag)
     }
 
     if (flag & CHECK_FREE_EQ_NXT) {
-# if CANARIS_INTEGRITY == 0
+# if CONFIG_STD_MALLOC_CANARIS_INTEGRITY == 0
         if (PRV_FREE_SECU(NXT_FREE_SECU(b)) != b) {
 # else
         if (PRV_FREE(NXT_FREE(b)) != b) {
@@ -1063,6 +1102,11 @@ static int check_consistency(struct block * b, u__sz_t flag)
 #ifdef PRINT_HEAP
 int print_heap(void)
 {
+    if(allocator_initialized != 1){
+        malloc_errno = EHEAPNODEF;
+        return -1;
+    }
+
     struct block *b_0 = (struct block *) _start_heap;
     struct block *b_cur = NULL;
 

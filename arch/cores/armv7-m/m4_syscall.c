@@ -35,8 +35,7 @@ int     _main(uint32_t slot);
 #pragma clang optimize off
   /* Well, clang support local stack protection deactivation only since v8 :-/ */
 #if __clang_major__ > 7
-#pragma clang attribute push(__attribute__((no_stack_protector)), apply_to = do_starttask)
-#endif
+#pragma clang attribute push(__attribute__((no_stack_protector)))
 #endif
 
 __IN_SEC_VDSO void do_starttask(uint32_t slot, uint32_t seed)
@@ -72,34 +71,6 @@ __IN_SEC_VDSO void __stack_chk_fail(void)
     };
 }
 
-#if __clang__
-#pragma clang optimize on
-#if __clang_major__ > 7
-#pragma clang attribute pop
-#endif
-#endif
-
-#if __GNUC__
-#pragma GCC pop_options
-#endif
-
-/**
- ** \private
- ** ISR handler glue. The kernel must set the real handler @ in the
- ** stack frame to make the NVIC reload r0 with its @.
- */
-__IN_SEC_VDSO void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
-{
-    if (handler) {
-        handler(irq, status, data);
-    }
-
-    /* End of ISR */
-    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
-
-    while (1) {
-    };
-}
 
 /**
  ** \private
@@ -278,3 +249,32 @@ __IN_SEC_VDSO e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
             return SYS_E_INVAL;
     }
 }
+
+/**
+ ** \private
+ ** ISR handler glue. The kernel must set the real handler @ in the
+ ** stack frame to make the NVIC reload r0 with its @.
+ */
+__IN_SEC_VDSO void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
+{
+    if (handler) {
+        handler(irq, status, data);
+    }
+
+    /* End of ISR */
+    asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
+
+    while (1) {
+    };
+}
+
+#if __clang__
+#pragma clang optimize on
+#if __clang_major__ > 7
+#pragma clang attribute pop
+#endif
+#endif
+
+#if __GNUC__
+#pragma GCC pop_options
+#endif

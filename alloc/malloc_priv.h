@@ -10,7 +10,6 @@
 
 #ifdef CONFIG_STD_MALLOC
 
-#include "malloc_priv.h"
 #include "malloc_errno.h"   /* Specific wmalloc errno values */
 #include "libc/types.h"
 #include "libc/malloc.h"
@@ -151,6 +150,8 @@ int _heap_integrity(void);
 #include "malloc_bins.h"
 #endif
 
+/* For randomness source */
+#include "libc/random.h"
 
 #endif
 #endif
