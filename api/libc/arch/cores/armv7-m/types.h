@@ -10,6 +10,8 @@ typedef unsigned int uint32_t;
 typedef unsigned long long int uint64_t;
 /* fully typed log buffer size */
 typedef uint8_t logsize_t;
+/* POSIX compliant typing for time_t type */
+typedef long time_t;
 
 
 #define KBYTE 1024

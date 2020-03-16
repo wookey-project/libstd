@@ -95,4 +95,12 @@ int aprintf(const char *fmt, ...);
  */
 int aprintf_flush(void);
 
+/*
+ * active wait for given ms time. This function does *not* yeld or sleep,
+ * but loop for the given time. This should be used for small amount of
+ * time only, for particular needs where POSIX sleep() and nanosleep() are not
+ * enough (see time.h).
+ */
+void waitfor(uint8_t ms);
+
 #endif/*!NOSTD_H_*/
