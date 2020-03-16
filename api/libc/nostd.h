@@ -101,6 +101,6 @@ int aprintf_flush(void);
  * time only, for particular needs where POSIX sleep() and nanosleep() are not
  * enough (see time.h).
  */
-void waitfor(uint8_t ms);
+void waitfor(uint32_t ms);
 
 #endif/*!NOSTD_H_*/

@@ -29,7 +29,7 @@
 /*
  * Active wait, *not* POSIX compliant
  */
-void waitfor(uint8_t ms)
+void waitfor(uint32_t ms)
 {
     uint64_t val;
     uint64_t val2;
