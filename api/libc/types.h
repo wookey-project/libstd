@@ -51,7 +51,7 @@ typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 #define __out           /* indication for function arguments (Ada like) */
 #define __inout         /* indication for function arguments (Ada like) */
 
-#if defined(__GNUC__) && __GNUC__ > 7
+#if defined(__GNUC__) && __GNUC__ > 6
 #define __explicit_fallthrough __attribute__ ((fallthrough));
 #else
 #define __explicit_fallthrough
