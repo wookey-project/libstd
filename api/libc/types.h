@@ -81,6 +81,7 @@ typedef enum {
     MBED_ERROR_INITFAIL,
     MBED_ERROR_TOOBIG,
     MBED_ERROR_NOTFOUND,
+    MBED_ERROR_INTR,
 } mbed_error_t;
 
 #endif/*!TYPES_H_*/
