@@ -9,9 +9,40 @@ config USR_LIB_STD
 # no specific config for libstd by now
 menu "Libstd configuration"
 
+config STD_DRBG
+   bool "Support DRBG for secure random generation"
+   default y
+  ---help---
+  Support for DRBG to have a secure entropy processing
+  algorithm compatible with the NIST SP800-90A standard.
+  If DRBG is not selected, the platform TRNG is used as
+  the raw random generator, which NOT a good practice.
+
+if STD_DRBG
+menu "DRBG configuration"
+
+choice
+   prompt "DRBG secure RNG backends"
+   default USR_LIB_DRBG_USE_HMAC_DRBG
+   config USR_LIB_DRBG_USE_HMAC_DRBG
+   bool "HMAC DRBG"
+   ---help---
+      HMAC-DRBG as standardized by NIST SP800-90A
+endchoice
+
+config STD_DRBG_ENTROPY_CPU_CYCLES
+   bool "Use the platform cycles counter as an additional entropy source"
+   default n
+   ---help---
+      Use the platform cycle counter as an entropy source
+      for the DRBG (in addition to the TRNG)
+
+endmenu
+endif
+
+
 config STD_MALLOC
    bool "Support for libstd malloc/free"
-   default y
 
 if STD_MALLOC
 

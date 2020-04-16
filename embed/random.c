@@ -28,60 +28,105 @@
 #include "libc/string.h"
 #include "libc/syscall.h"
 #include "libc/random.h"
+#include "drbg/drbg.h"
+#include "drbg/entropy.h"
+
+#include "autoconf.h"
+
+#ifdef CONFIG_STD_DRBG
+
+static volatile bool drbg_init_done = false;
+
+#define DRBG_FRESH_ENTROPY_LEN 64
+static volatile drbg_ctx random_drbg_ctx;
+
+static int drbg_init(void)
+{
+	/* As a personnalisation string of the DRBG , we use the current
+	 * flash address of the function (unique per task)
+	 */
+	unsigned char personnalisation_string[16] = { 0 };
+	if(sizeof(personnalisation_string) < (4 * sizeof(void*))){
+		goto err;
+	}
+	memcpy(personnalisation_string, (char*)&drbg_init, sizeof(void*));
+	/* We also concatenate some SRAM address (also specific to the task) */
+	memcpy(personnalisation_string+sizeof(void*), (char*)&drbg_init_done, sizeof(void*));
+	/* Finally, we concatenate 64 bits random to make the instantiation unique */	
+	if(get_entropy(personnalisation_string+(2*sizeof(void*)), (2*sizeof(void*)))){
+		goto err;
+	}
+	/* Instantiate our DRBG context
+	 * NOTE1: we do activate so called "prediction resistance" here, in order to regularly
+	 * get fresh entropy. We also regularly trigger explicit reseeds
+	 * using DRBG_FORCE_RESEED_INTERVAL (see below).
+	 * NOTE2: we ask for a 256-bit entropy wise DRBG, yielding a HMAC-SHA256 based HMAC-DRBG.
+	 */
+	if(drbg_instantiate((drbg_ctx *)&random_drbg_ctx, 256, 1, personnalisation_string, sizeof(personnalisation_string)) != DRBG_OK){
+		goto err;
+	}
+
+	return 0;
+err:
+	return -1;
+}
+
+/* Max reseeding interval (in asked bytes) for the DRBG */
+#define DRBG_FORCE_RESEED_INTERVAL 128 /* Force a reseed every 128 bytes asked */
+
+static volatile uint32_t drbg_calls = 0;
+static int drbg_get_random(unsigned char *buf, uint16_t len)
+{
+	if(drbg_calls >= DRBG_FORCE_RESEED_INTERVAL){
+		/* Time to explicitly reseed our underlying DRBG */
+		unsigned char fresh_entropy[DRBG_FRESH_ENTROPY_LEN] = { 0 };
+		if(get_entropy(fresh_entropy, sizeof(fresh_entropy))){
+			goto err;
+		}
+		drbg_calls = 0;
+		if(drbg_reseed((drbg_ctx*)&random_drbg_ctx, fresh_entropy, sizeof(fresh_entropy)) != DRBG_OK){
+			goto err;
+		}
+	}
+	if(drbg_generate((drbg_ctx*)&random_drbg_ctx, NULL, 0, buf, len) != DRBG_OK){
+		goto err;
+	}
+
+	drbg_calls += len;
+
+	return 0;
+err:
+	return -1;
+}
+#endif
 
 mbed_error_t get_random(unsigned char *buf, uint16_t len)
+#ifdef CONFIG_STD_DRBG
 {
-    uint16_t i;
-    uint8_t ret;
-    mbed_error_t err = MBED_ERROR_NONE;
-
-    /*sanitize */
-    if (!buf) {
-        err = MBED_ERROR_INVPARAM;
-        goto error;
-    }
-
-    /* First, set the buffer to zero */
-    memset(buf, 0, len);
-
-    /* Generate as much random as necessary */
-    for (i = 0; i < (sizeof(uint32_t) * (len / sizeof(uint32_t)));
-         i += sizeof(uint32_t)) {
-        if ((ret = sys_get_random((char *) (&(buf[i])), 4))) {
-            if (ret == SYS_E_DENIED) {
-                err = MBED_ERROR_DENIED;
-            } else if (ret == SYS_E_BUSY) {
-                err = MBED_ERROR_BUSY;
-            } else {
-                err = MBED_ERROR_UNKNOWN;
-            }
-            goto error;
-        }
-    }
-    if ((len - i) > (int16_t) sizeof(uint32_t)) {
-        /* We should not end here, the buf len is not 32 bits multiple */
-        err = MBED_ERROR_INVPARAM;
-        goto error;
-    }
-    /* Handle the remaining bytes */
-    if (i < len) {
-        uint32_t random;
-
-        if ((ret = sys_get_random(((char *) &random), 4))) {
-            if (ret == SYS_E_DENIED) {
-                err = MBED_ERROR_DENIED;
-            } else if (ret == SYS_E_BUSY) {
-                err = MBED_ERROR_BUSY;
-            } else {
-                err = MBED_ERROR_UNKNOWN;
-            }
-            goto error;
-        }
-        while (i < len) {
-            buf[i] = (random >> (8 * (len - i))) & 0xff;
-            i++;
-        }
-    }
+        mbed_error_t err = MBED_ERROR_NONE;
+	if(drbg_init_done == false){
+		if(drbg_init()){
+			err = MBED_ERROR_UNKNOWN;
+			goto error;
+		}
+		drbg_init_done = true;
+	}
+	if(drbg_get_random(buf, len)){
+		err = MBED_ERROR_UNKNOWN;
+		goto error;
+	}
  error:
-    return err;
+	return err;
 }
+#else /* We do not use any DRBG, so we directly use the syscall to get it from kernel */
+{
+ 	mbed_error_t err = MBED_ERROR_NONE;
+	
+	if((err = get_entropy(buf, len)) != MBED_ERROR_NONE){
+		goto error;
+	}
+
+ error:
+ 	return err;
+}
+#endif
