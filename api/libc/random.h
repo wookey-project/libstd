@@ -26,6 +26,19 @@
 
 #include "libc/types.h"
 
+
+#define RAND_MAX 32767
+
+/* ISOC functions for random. These provide *NON SECURE* random, 
+ * that can be OK for non critical applications.
+ */
+int rand(void);
+
+int rand_r(unsigned int *seedp);
+
+void srand(unsigned int seed);
+
+
 /**
  * \fn get_random
  * \brief load random content from the system entropy source into a buffer

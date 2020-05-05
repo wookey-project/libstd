@@ -33,6 +33,47 @@
 
 #include "autoconf.h"
 
+
+/***** "Unsecure" ISO C random using a linear congruential generator (LGC) *****/
+/* WARNING: this egenrator is *NOT* cryptographically secure!! */
+/*
+ * We use GLIBC's parameters:
+ *    modulus m = 2**31
+ *    multiplier a = 1103515245
+ *    increment c = 12345
+ *
+ */
+static unsigned int rand_seed = 1; /* seed default value is 1 */
+
+int rand(void)
+{
+	rand_seed = (rand_seed * 1103515245) + 12345;
+	return (int)((unsigned int)(rand_seed/65536) % (RAND_MAX + 1));
+
+} 
+
+void srand(unsigned int seed)
+{
+	rand_seed = seed;
+
+	return;
+}
+
+int rand_r(unsigned int *seedp)
+{
+	(*seedp) = ((*seedp) * 1103515245) + 12345;
+	return (int)((unsigned int)((*seedp)/65536) % (RAND_MAX + 1));
+}
+
+
+/***** "Secure" random using a DRBG and a TRNG *****/
+/*
+ * The main primitive used for our CS (Cryptographically Secure) PRNG is 
+ * HMAC-DRBG as standardized bu NIST 800-90A. HMAC-DRBG has been prefered to
+ * other designs (Hash-DRBG and CTR-DRG) because it has a cleaner design, and
+ * inherits some security proofs (see https://www.cs.cmu.edu/~kqy/resources/thesis.pdf).
+ */
+
 #ifdef CONFIG_STD_DRBG
 
 static volatile bool drbg_init_done = false;
