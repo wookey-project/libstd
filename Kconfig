@@ -41,6 +41,14 @@ endmenu
 endif
 
 
+config STD_SANITIZE_HANDLERS
+   bool "Support handlers and callbacks sanitization"
+   default y
+  ---help---
+      Bring function pointers (handlers and callbacks) sanitization
+      to limit memory corruption attacks.
+
+
 config STD_MALLOC
    bool "Support for libstd malloc/free"
 
