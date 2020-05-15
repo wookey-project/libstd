@@ -118,6 +118,7 @@ e_syscall_ret sys_yield(void);
 ** sys_exit can be called from any task context (ISR or main thread context)
 */
 e_syscall_ret sys_exit(void);
+e_syscall_ret sys_panic(void);
 
 /**
 ** \brief ask for urgent board reset

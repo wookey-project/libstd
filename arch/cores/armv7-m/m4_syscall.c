@@ -263,6 +263,12 @@ __IN_SEC_VDSO e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
                           :[svc] "i"(SVC_LOCK_EXIT),[args] "g"(args)
                           :"r0");
             return ret;
+        case SVC_PANIC:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_PANIC),[args] "g"(args)
+                          :"r0");
+            return ret;
         default:
             return SYS_E_INVAL;
     }

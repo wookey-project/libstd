@@ -109,6 +109,12 @@ __IN_SEC_VDSO e_syscall_ret sys_exit(void)
     return do_syscall(SVC_EXIT, &args);
 }
 
+__IN_SEC_VDSO e_syscall_ret sys_panic(void)
+{
+    struct gen_syscall_args args = { 0, 0, 0, 0 };
+    return do_syscall(SVC_PANIC, &args);
+}
+
 __IN_SEC_VDSO e_syscall_ret sys_lock(uint32_t action)
 {
     struct gen_syscall_args args = { 0, 0, 0, 0 };
