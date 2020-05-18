@@ -18,13 +18,13 @@
 
 
 /* Check if a handler is in our approved handlers */
-extern void *__s_SEC_sanhandlers;
-extern void *__e_SEC_sanhandlers;
+extern physaddr_t __s_SEC_sanhandlers;
+extern physaddr_t __e_SEC_sanhandlers;
 
-static inline int handler_sanity_check(void *h)
+static inline int handler_sanity_check(physaddr_t h)
 {
-        void **start = &__s_SEC_sanhandlers;
-        void **end   = &__e_SEC_sanhandlers;
+        physaddr_t *start = &__s_SEC_sanhandlers;
+        physaddr_t *end   = &__e_SEC_sanhandlers;
         while(start < end){
 		if(h == *start){
 			return 0;
@@ -35,17 +35,36 @@ static inline int handler_sanity_check(void *h)
 	return -1;
 }
 
+/* Check handler with panic */
+static inline int handler_sanity_check_with_panic(physaddr_t h)
+{
+	if(handler_sanity_check(h)){
+		sys_panic();
+		/* This should not happen, but protect anyways */
+		while(1){};
+	}
+	else{
+		return 0;
+	}
+	/* This should not happen, but protect anyways */
+	while(1){};
+}
+
 #else /* !CONFIG_STD_SANITIZE_HANDLERS */
 
 #define ADD_LOC_HANDLER(a)
 
 #define ADD_GLOB_HANDLER(a)
 
-static inline int handler_sanity_check(__attribute__((unused)) void *h)
+static inline int handler_sanity_check(__attribute__((unused)) physaddr_t h)
 {
 	return 0;
 }
 
+static inline int handler_sanity_check_with_panic(__attribute__((unused)) physaddr_t h)
+{
+	return 0;
+}
 
 #endif /* CONFIG_STD_SANITIZE_HANDLERS */
 
