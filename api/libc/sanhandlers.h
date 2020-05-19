@@ -2,6 +2,7 @@
 #define __SANHANDLERS_H__
 
 #include "autoconf.h"
+#include "libc/syscall.h"
 
 #ifdef CONFIG_STD_SANITIZE_HANDLERS
 
@@ -14,7 +15,7 @@
 } while(0);
 
 #define ADD_GLOB_HANDLER(a) \
-        __attribute__ ((section ("SEC_sanhandlers"))) __attribute__((used)) static void* CONCAT(handler,__LINE__) = (void*)(a);   
+        __attribute__ ((section ("SEC_sanhandlers"))) __attribute__((used)) static void* CONCAT(handler,__LINE__) = (void*)(a);
 
 
 /* Check if a handler is in our approved handlers */
