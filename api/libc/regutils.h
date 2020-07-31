@@ -66,6 +66,12 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value);
 __INLINE void set_reg_bits(register_t reg, uint32_t value);
 __INLINE void clear_reg_bits(register_t reg, uint32_t value);
 
+/*@
+    @ requires \valid_read(reg);
+    @ assigns \nothing ;
+    @ ensures ((mask == 0x00) || (pos > 31)) ==> \result == 0;
+    @ ensures !((mask == 0x00) || (pos > 31)) ==> \result == (uint32_t)(((*reg) & mask) >> pos);
+*/
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
 {
@@ -84,6 +90,27 @@ __INLINE uint16_t get_reg16_value(volatile uint16_t * reg, uint16_t mask,
     return (uint16_t) (((*reg) & mask) >> pos);
 }
 
+/*@
+    @ requires \valid(reg);
+    @ assigns *reg ;
+
+    @ behavior bad_pos:
+    @   assumes (pos > 31) ;
+    @   ensures \result == -1 ;
+
+    @ behavior mask_ff:
+    @   assumes !(pos > 31) ;
+    @   assumes (mask == 0xFFFFFFFF) ;
+    @   ensures \result == 0 && *reg == value ;
+
+    @ behavior mask_other:
+    @   assumes !(pos > 31) ;
+    @   assumes !(mask == 0xFFFFFFFF) ;
+    @   ensures \result == 0 ;
+
+    @ complete behaviors ;
+    @ disjoint behaviors ;
+*/
 __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos)
 {
@@ -96,8 +123,34 @@ __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
         (*reg) = value;
     } else {
         tmp = read_reg_value(reg);
-        tmp &= ~mask;
+        tmp &= (uint32_t) ~ mask;
+
+#ifdef __FRAMAC__
+        /* TODO: validate that the sementic is equivalent to the non_FramaC
+         * implementation before substitute */
+        /*@
+        	@ loop invariant 0 <= i <= pos+1 ;
+        	@ loop invariant pos <= 31 ;
+        	@ loop assigns i, tmp1;
+        	@ loop variant pos -i;
+        */
+        for(uint8_t i=0; i < pos+1 ; i++){
+        	if(i == 0)
+        		tmp1 = 1 ;
+        	else
+        		tmp1 *= 2 ;
+        }
+
+        tmp1 -= (uint32_t) 1 ;
+        tmp2 = (uint32_t) ~tmp1 ;
+
+    /* @ assert 0 <= (uint32_t)(value << pos) <= 4294967295 ; */
+    /* @ assert 0 <= pos <= 30 ; */
+
+        tmp |= tmp2 & mask;
+#else
         tmp |= (value << pos) & mask;
+#endif
         write_reg_value(reg, tmp);
     }
 
@@ -124,6 +177,11 @@ __INLINE int8_t set_reg16_value(volatile uint16_t * reg, uint16_t value,
     return 0;
 }
 
+/*@
+    @ requires \valid_read(reg);
+    @ assigns \nothing;
+    @ ensures \result == *reg ;
+*/
 __INLINE uint32_t read_reg_value(register_t reg)
 {
     return (uint32_t) (*reg);
@@ -134,6 +192,11 @@ __INLINE uint16_t read_reg16_value(volatile uint16_t * reg)
     return (uint16_t) (*reg);
 }
 
+/*@
+    @ requires \valid(reg);
+    @ assigns *reg;
+    @ ensures (*reg) == value;
+*/
 __INLINE void write_reg_value(register_t reg, uint32_t value)
 {
     (*reg) = value;
@@ -144,6 +207,11 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
     (*reg) = value;
 }
 
+/*@
+    @ requires \valid(reg);
+    @ assigns *reg;
+    @ ensures *reg == (\old(*reg) | value) ;
+*/
 __INLINE void set_reg_bits(register_t reg, uint32_t value)
 {
     *reg |= value;
