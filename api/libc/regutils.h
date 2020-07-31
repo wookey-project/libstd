@@ -25,7 +25,7 @@
 #define REGUTILS_H_
 #include "libc/types.h"
 
-#define REG_ADDR(addr)                      ((volatile uint32_t *)(addr))
+#define REG_ADDR(addr)                      ((register_t)(addr))
 #define REG_VALUE(reg, value, pos, mask)    ((reg)  |= (((value) << (pos)) & (mask)))
 
 #define SET_BIT(REG, BIT)     ((REG) |= (BIT))
@@ -55,16 +55,16 @@ __INLINE uint8_t min_u8(uint8_t x, uint8_t y)
 
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos);
-__INLINE int8_t set_reg_value(volatile uint32_t * reg, uint32_t value,
+__INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos);
 
-__INLINE uint32_t read_reg_value(volatile uint32_t * reg);
+__INLINE uint32_t read_reg_value(register_t reg);
 __INLINE uint16_t read_reg16_value(volatile uint16_t * reg);
-__INLINE void write_reg_value(volatile uint32_t * reg, uint32_t value);
+__INLINE void write_reg_value(register_t reg, uint32_t value);
 __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value);
 
-__INLINE void set_reg_bits(volatile uint32_t * reg, uint32_t value);
-__INLINE void clear_reg_bits(volatile uint32_t * reg, uint32_t value);
+__INLINE void set_reg_bits(register_t reg, uint32_t value);
+__INLINE void clear_reg_bits(register_t reg, uint32_t value);
 
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
@@ -84,7 +84,7 @@ __INLINE uint16_t get_reg16_value(volatile uint16_t * reg, uint16_t mask,
     return (uint16_t) (((*reg) & mask) >> pos);
 }
 
-__INLINE int8_t set_reg_value(volatile uint32_t * reg, uint32_t value,
+__INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos)
 {
     uint32_t tmp;
@@ -124,7 +124,7 @@ __INLINE int8_t set_reg16_value(volatile uint16_t * reg, uint16_t value,
     return 0;
 }
 
-__INLINE uint32_t read_reg_value(volatile uint32_t * reg)
+__INLINE uint32_t read_reg_value(register_t reg)
 {
     return (uint32_t) (*reg);
 }
@@ -134,7 +134,7 @@ __INLINE uint16_t read_reg16_value(volatile uint16_t * reg)
     return (uint16_t) (*reg);
 }
 
-__INLINE void write_reg_value(volatile uint32_t * reg, uint32_t value)
+__INLINE void write_reg_value(register_t reg, uint32_t value)
 {
     (*reg) = value;
 }
@@ -144,7 +144,7 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
     (*reg) = value;
 }
 
-__INLINE void set_reg_bits(volatile uint32_t * reg, uint32_t value)
+__INLINE void set_reg_bits(register_t reg, uint32_t value)
 {
     *reg |= value;
 }
@@ -154,7 +154,7 @@ __INLINE void set_reg16_bits(volatile uint16_t * reg, uint16_t value)
     *reg |= value;
 }
 
-__INLINE void clear_reg_bits(volatile uint32_t * reg, uint32_t value)
+__INLINE void clear_reg_bits(register_t reg, uint32_t value)
 {
     *reg &= (uint32_t) ~ (value);
 }

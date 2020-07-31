@@ -63,28 +63,195 @@ struct gen_syscall_args {
  *   being replaced by the corresponding function at preprocessing time
  * \{
  */
+
+/*@
+    @ assigns \result \from inittype, *device, *descriptor ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_init_INIT_DEVACCESS(uint32_t inittype, const device_t *device, int *descriptor);
+
+/*@
+    @ assigns \result \from inittype, *dma, *descriptor ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_init_INIT_DMA(uint32_t inittype, volatile dma_t *dma, int *descriptor);
+
+/*@
+    @ assigns \result \from inittype, *dmashm ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_init_INIT_DMA_SHM(uint32_t inittype, dma_shm_t *dmashm);
+
+/*@
+    @ assigns \result \from inittype, *name, *id ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_init_INIT_GETTASKID(uint32_t inittype, char *name, uint8_t *id);
+
+/*@
+    @ assigns \result \from inittype ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_init_INIT_DONE(uint32_t inittype);
 
-
+/*@
+    @ assigns \result \from cfgtype, gpioref, value ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_GPIO_SET(uint32_t cfgtype, uint8_t gpioref, uint8_t value);
+
+/*@
+    @ assigns \result \from cfgtype, gpioref, *value ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_GPIO_GET(uint32_t cfgtype, uint8_t gpioref, uint8_t *value);
+
+/*@
+    @ assigns \result \from cfgtype, gpioref ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_GPIO_UNLOCK_EXTI(uint32_t cfgtype, uint8_t gpioref);
+
+/*@
+    @ assigns \result \from cfgtype, *dma, mask, descriptor ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DMA_RECONF(uint32_t cfgtype, dma_t*dma, dma_reconf_mask_t mask, int descriptor);
+
+/*@
+    @ assigns \result \from cfgtype, descriptor ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DMA_RELOAD(uint32_t cfgtype, int descriptor);
+
+/*@
+    @ assigns \result \from cfgtype, descriptor ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DMA_DISABLE(uint32_t cfgtype, int descriptor);
+
+/*@
+    @ assigns \result \from cfgtype, devid;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DEV_MAP(uint32_t cfgtype, uint32_t devid);
+
+/*@
+    @ assigns \result \from cfgtype, devid;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DEV_UNMAP(uint32_t cfgtype, uint32_t devid);
+
+/*@
+    @ assigns \result \from cfgtype, devid;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_cfg_CFG_DEV_RELEASE(uint32_t cfgtype, uint32_t devid);
 
+/*@
+    @ assigns \result \from ipctype, receiver, size, *msg ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_ipc_IPC_SEND_SYNC(uint32_t ipctype, uint8_t receiver, logsize_t size, const char *msg);
+
+/*@
+    @ assigns \result \from ipctype, *sender, *size, *msg ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_ipc_IPC_RECV_SYNC(uint32_t ipctype, uint8_t *sender, logsize_t *size, char *msg);
+
+/*@
+    @ assigns \result \from ipctype, receiver, size, *msg ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_ipc_IPC_SEND_ASYNC(uint32_t ipctype, uint8_t receiver, logsize_t size, const char *msg);
+
+/*@
+    @ assigns \result \from ipctype, *sender, *size, *msg ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_t *size, char *msg);
 
+/*@
+    @ assigns \result \from size, *msg ;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_log (logsize_t size, const char *msg);
 
 /**
@@ -103,6 +270,13 @@ e_syscall_ret sys_log (logsize_t size, const char *msg);
 **
 ** This syscall results in the immediate scheduling of another task without violation of the scheduling scheme.
 */
+/*@
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_yield(void);
 
 /**
@@ -117,7 +291,21 @@ e_syscall_ret sys_yield(void);
 **
 ** sys_exit can be called from any task context (ISR or main thread context)
 */
+/*@
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_exit(void);
+/*@
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_panic(void);
 
 /**
@@ -129,8 +317,24 @@ e_syscall_ret sys_panic(void);
 */
 e_syscall_ret sys_reset(void);
 
+/*@
+    @ assigns \result \from time, mode;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
+
 e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode);
 
+/*@
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_lock(uint32_t action);
 
 /**
@@ -277,12 +481,28 @@ e_syscall_ret sys_lock(uint32_t action);
 /**
 ** \brief set a 32bits unsigned value with the current systick
 */
+/*@
+    @ assigns \result \from *val, type;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_get_systick(uint64_t * val,  e_tick_type type);
 
 /**
  * \brief return random content of len size
  * On Ada kernel, len must not be greater than 16 bytes.
  */
+/*@
+    @ assigns \result \from *val, len;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_get_random(char * val, uint16_t len);
 
 /**

@@ -23,6 +23,10 @@ typedef long time_t;
 /* 32bits targets specific */
 typedef uint32_t physaddr_t;
 
+/* Defining 32 bits registers type. registers are volatile content,
+ * even when using Frama-C. This should prevent some ToCToU */
+typedef volatile uint32_t* register_t;
+
 typedef unsigned int size_t;
 typedef int ssize_t;
 
