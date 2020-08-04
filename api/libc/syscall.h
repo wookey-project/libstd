@@ -27,10 +27,19 @@
 #include "autoconf.h"
 #include "libc/interrupt.h"
 #include "libc/types.h"
+#ifndef __FRAMAC__
+/* FIXME: this PATH should be resolved by an SDK-level inclusion path instead */
 #include "kernel/src/C/exported/syscalls.h"
 #include "kernel/src/C/exported/devices.h"
 #include "kernel/src/C/exported/dmas.h"
 #include "kernel/src/C/exported/sleep.h"
+#else
+/* kernel exported dir is passed in frama-C argument */
+#include "syscalls.h"
+#include "devices.h"
+#include "dmas.h"
+#include "sleep.h"
+#endif
 
 // FIXME - nothing to do here!
 #ifdef CONFIG_STM32F4
