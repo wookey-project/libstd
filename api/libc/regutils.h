@@ -70,7 +70,7 @@ __INLINE void clear_reg_bits(register_t reg, uint32_t value);
     @ requires \valid_read(reg);
     @ assigns \nothing ;
     @ ensures ((mask == 0x00) || (pos > 31)) ==> \result == 0;
-    @ ensures !((mask == 0x00) || (pos > 31)) ==> \result == (uint32_t)(((*reg) & mask) >> pos);
+    @ ensures !((mask == 0x00) || (pos > 31)) ==> 0 <= \result <= 4294967295 ;
 */
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
@@ -101,7 +101,7 @@ __INLINE uint16_t get_reg16_value(volatile uint16_t * reg, uint16_t mask,
     @ behavior mask_ff:
     @   assumes !(pos > 31) ;
     @   assumes (mask == 0xFFFFFFFF) ;
-    @   ensures \result == 0 && *reg == value ;
+    @   ensures \result == 0 ;
 
     @ behavior mask_other:
     @   assumes !(pos > 31) ;
@@ -111,6 +111,8 @@ __INLINE uint16_t get_reg16_value(volatile uint16_t * reg, uint16_t mask,
     @ complete behaviors ;
     @ disjoint behaviors ;
 */
+
+/* TODO : *reg with volatile */
 __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos)
 {
@@ -180,7 +182,7 @@ __INLINE int8_t set_reg16_value(volatile uint16_t * reg, uint16_t value,
 /*@
     @ requires \valid_read(reg);
     @ assigns \nothing;
-    @ ensures \result == *reg ;
+    @ ensures 0<= \result <= 4294967295 ;
 */
 __INLINE uint32_t read_reg_value(register_t reg)
 {
@@ -195,11 +197,15 @@ __INLINE uint16_t read_reg16_value(volatile uint16_t * reg)
 /*@
     @ requires \valid(reg);
     @ assigns *reg;
-    @ ensures (*reg) == value;
+
 */
+
+/* TODO : ensures *reg with volatile */
+
 __INLINE void write_reg_value(register_t reg, uint32_t value)
 {
     (*reg) = value;
+    /*@ assert 0 <= *reg <= 4294967295; */
 }
 
 __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
@@ -210,11 +216,14 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
 /*@
     @ requires \valid(reg);
     @ assigns *reg;
-    @ ensures *reg == (\old(*reg) | value) ;
 */
+
+/* TODO : ensures *reg (with volatile...) */
 __INLINE void set_reg_bits(register_t reg, uint32_t value)
 {
+    /*@ assert 0 <= (*reg | value) <= 4294967295 ; */
     *reg |= value;
+    /*@ assert 0 <= *reg <= 4294967295 ; */
 }
 
 __INLINE void set_reg16_bits(volatile uint16_t * reg, uint16_t value)
