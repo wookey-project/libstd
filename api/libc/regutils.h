@@ -117,8 +117,10 @@ __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos)
 {
     uint32_t tmp;
+#ifdef __FRAMAC__
     uint32_t tmp1;
     uint32_t tmp2;
+#endif
 
     if (pos > 31)
         return -1;
