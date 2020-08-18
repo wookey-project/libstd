@@ -150,6 +150,55 @@ char *    strncpy(char *      dest,
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
+
+/*@ axiomatic MemCmp {
+  @ logic ℤ memcmp{L1,L2}(char *s1, char *s2, ℤ n)
+  @   reads \at(s1[0..n - 1],L1), \at(s2[0..n - 1],L2);
+  @
+  @ axiom memcmp_zero{L1,L2}:
+  @   \forall char *s1, *s2; \forall ℤ n;
+  @      memcmp{L1,L2}(s1,s2,n) == 0
+  @      <==> \forall ℤ i; 0 <= i < n ==> \at(s1[i],L1) == \at(s2[i],L2);
+  @
+  @ }
+  @*/
+
+/*@ axiomatic MemSet {
+  @ logic 𝔹 memset{L}(char *s, ℤ c, ℤ n)
+  @   reads s[0..n - 1];
+  @ // Returns [true] iff array [s] contains only character [c]
+  @
+  @ axiom memset_def{L}:
+  @   \forall char *s; \forall ℤ c; \forall ℤ n;
+  @      memset(s,c,n) <==> \forall ℤ i; 0 <= i < n ==> s[i] == c;
+  @ }
+  @*/
+
+/*@
+  predicate empty_block{L}(void *s) =
+    \block_length((char*)s) == 0 && \offset((char*)s) == 0;
+
+  predicate valid_or_empty{L}(void *s, uint32_t n) =
+    (empty_block(s) || \valid_read((char*)s)) && \valid(((char*)s)+(0..n-1));
+
+  predicate valid_read_or_empty{L}(void *s, uint32_t n) =
+    (empty_block(s) || \valid_read((char*)s)) && \valid_read(((char*)s)+(1..n-1));
+*/
+
+int       memcmp(const void *  s1,
+                 const void *  s2,
+                 int           n);
+
+/*@ requires valid_dest: valid_or_empty(dest, n);
+  @ requires valid_src: valid_read_or_empty(src, n);
+  @ requires separation:
+  @   \separated(((char *)dest)+(0..n-1),((char *)src)+(0..n-1));
+  @ assigns ((char*)dest)[0..n - 1] \from ((char*)src)[0..n-1];
+  @ assigns \result \from dest;
+  @ ensures copied_contents: memcmp{Post,Pre}((char*)dest,(char*)src,n) == 0;
+  @ ensures result_ptr: \result == dest;
+  @*/
+
 void *    memcpy(void *        dest,
                  const void *  src,
                  uint32_t      n);
@@ -166,9 +215,8 @@ void *    memcpy(void *        dest,
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
-int       memcmp(const void *  s1,
-                 const void *  s2,
-                 int           n);
+
+
 /*
  * Set n first bytes of a given memory area with a given byte value
  *
@@ -181,6 +229,14 @@ int       memcmp(const void *  s1,
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
+
+/*@ requires valid_s: valid_or_empty(s, n);
+  @ assigns ((char*)s)[0..n - 1] \from c;
+  @ assigns \result \from s;
+  @ ensures acsl_c_equiv: memset((char*)s,c,n);
+  @ ensures result_ptr: \result == s;
+  @*/
+
 void *    memset(void *        s,
                  int           c,
                  uint32_t      n);
