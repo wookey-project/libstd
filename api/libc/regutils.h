@@ -72,6 +72,10 @@ __INLINE void clear_reg_bits(register_t reg, uint32_t value);
     @ ensures ((mask == 0x00) || (pos > 31)) ==> \result == 0;
     @ ensures !((mask == 0x00) || (pos > 31)) ==> 0 <= \result <= 4294967295 ;
 */
+
+/*
+    TODO : proof (uint32_t) (((*reg) & mask) >> pos) == (uint32_t) (((*reg) & mask) >> pos)
+*/
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
 {
@@ -117,10 +121,9 @@ __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
                               uint32_t mask, uint8_t pos)
 {
     uint32_t tmp;
-#ifdef __FRAMAC__
-    uint32_t tmp1;
+    uint64_t tmp1;
     uint32_t tmp2;
-#endif
+
 
     if (pos > 31)
         return -1;
@@ -132,15 +135,20 @@ __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
         tmp &= (uint32_t) ~ mask;
 
 #ifdef __FRAMAC__
+
+    tmp1 = value ;  // uint32_t into a uint64_t
+    tmp2 = (uint32_t)((tmp1 << pos) & 0xFFFFFFFF) ; // tmp1 << pos is still a uint64_t, then with & 0xFFFFFFFF ==> uint32_t
+    tmp |= tmp2 & mask;
+
         /* TODO: validate that the sementic is equivalent to the non_FramaC
          * implementation before substitute */
-        /*@
+        /* @
         	@ loop invariant 0 <= i <= pos+1 ;
         	@ loop invariant pos <= 31 ;
         	@ loop assigns i, tmp1;
         	@ loop variant pos -i;
         */
-        for(uint8_t i=0; i < pos+1 ; i++){
+/*        for(uint8_t i=0; i < pos+1 ; i++){
         	if(i == 0)
         		tmp1 = 1 ;
         	else
@@ -149,11 +157,7 @@ __INLINE int8_t set_reg_value(register_t reg, uint32_t value,
 
         tmp1 -= (uint32_t) 1 ;
         tmp2 = (uint32_t) ~tmp1 ;
-
-    /* @ assert 0 <= (uint32_t)(value << pos) <= 4294967295 ; */
-    /* @ assert 0 <= pos <= 30 ; */
-
-        tmp |= tmp2 & mask;
+        tmp |= tmp2 & mask;*/
 #else
         tmp |= (value << pos) & mask;
 #endif
@@ -204,12 +208,9 @@ __INLINE uint16_t read_reg16_value(volatile uint16_t * reg)
 
 */
 
-/* TODO : ensures *reg with volatile */
-
 __INLINE void write_reg_value(register_t reg, uint32_t value)
 {
     (*reg) = value;
-    /*@ assert 0 <= *reg <= 4294967295; */
 }
 
 __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
@@ -222,12 +223,9 @@ __INLINE void write_reg16_value(volatile uint16_t * reg, uint16_t value)
     @ assigns *reg;
 */
 
-/* TODO : ensures *reg (with volatile...) */
 __INLINE void set_reg_bits(register_t reg, uint32_t value)
 {
-    /*@ assert 0 <= (*reg | value) <= 4294967295 ; */
     *reg |= value;
-    /*@ assert 0 <= *reg <= 4294967295 ; */
 }
 
 __INLINE void set_reg16_bits(volatile uint16_t * reg, uint16_t value)

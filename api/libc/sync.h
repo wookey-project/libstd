@@ -12,18 +12,33 @@
  * TODO: is arch_data_membarrier() not enough here ? instead of memsync.
  */
 
+/*@
+	@ requires \valid(target);
+	@ assigns *target ;
+	@ ensures *target == val ;
+*/
 inline void set_u8_with_memsync(uint8_t *target, uint8_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
     arch_data_memsync();
 }
 
+/*@
+	@ requires \valid(target);
+	@ assigns *target ;
+	@ ensures *target == val ;
+*/
 inline void set_u16_with_memsync(uint16_t *target, uint16_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
     arch_data_memsync();
 }
 
+/*@
+	@ requires \valid(target);
+	@ assigns *target ;
+	@ ensures *target == val ;
+*/
 inline void set_u32_with_memsync(uint32_t *target, uint32_t val) {
     /* let the effective assignation be compiled here */
     *target = val;

@@ -11,6 +11,10 @@
  * Make sure that any explicit data memory transfer specified before is done before the
  * next data memory transfer.
  */
+
+/*@
+	assigns \nothing ;
+*/
 inline void arch_data_membarrier(void) {
     asm volatile ("dmb");
 }
@@ -20,11 +24,13 @@ inline void arch_data_membarrier(void) {
  * Make sure that any explicit data memory transfer specified before is done before the
  * next instruction (harder than previous case, but slower).
  */
+
+/*@
+	assigns \nothing ;
+*/
 inline void arch_data_memsync(void) {
     asm volatile ("dmb");
 }
-
-
 
 
 #endif/*__ARMV7M_SYNC_H_*/
