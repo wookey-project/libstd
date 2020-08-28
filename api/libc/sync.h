@@ -9,10 +9,6 @@
 #endif
 
 /*
- * TODO: is arch_data_membarrier() not enough here ? instead of memsync.
- */
-
-/*
  * These functions permits to ensure that target data are written back in memory before
  * the next instruction happens. This avoid optimization side-effects (typically register
  * caching) when concurrent threads share a given variable.
@@ -33,10 +29,10 @@
 	@ assigns *target ;
 	@ ensures *target == val ;
 */
-inline void set_u8_with_memsync(uint8_t *target, uint8_t val) {
+inline void set_u8_with_membarrier(uint8_t *target, uint8_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
-    arch_data_memsync();
+    arch_data_membarrier();
 }
 
 /*@
@@ -44,10 +40,10 @@ inline void set_u8_with_memsync(uint8_t *target, uint8_t val) {
 	@ assigns *target ;
 	@ ensures *target == val ;
 */
-inline void set_u16_with_memsync(uint16_t *target, uint16_t val) {
+inline void set_u16_with_membarrier(uint16_t *target, uint16_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
-    arch_data_memsync();
+    arch_data_membarrier();
 }
 
 /*@
@@ -55,10 +51,10 @@ inline void set_u16_with_memsync(uint16_t *target, uint16_t val) {
 	@ assigns *target ;
 	@ ensures *target == val ;
 */
-inline void set_u32_with_memsync(uint32_t *target, uint32_t val) {
+inline void set_u32_with_membarrier(uint32_t *target, uint32_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
-    arch_data_memsync();
+    arch_data_membarrier();
 }
 
 /*@
@@ -66,10 +62,10 @@ inline void set_u32_with_memsync(uint32_t *target, uint32_t val) {
 	@ assigns *target ;
 	@ ensures *target == val ;
 */
-inline void set_bool_with_memsync(bool *target, bool val) {
+inline void set_bool_with_membarrier(bool *target, bool val) {
     /* let the effective assignation be compiled here */
     *target = val;
-    arch_data_memsync();
+    arch_data_membarrier();
 }
 
 

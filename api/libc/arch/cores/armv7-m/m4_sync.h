@@ -29,7 +29,7 @@ inline void arch_data_membarrier(void) {
 	assigns \nothing ;
 */
 inline void arch_data_memsync(void) {
-    asm volatile ("dmb");
+    asm volatile ("dsb");
 }
 
 
