@@ -38,7 +38,7 @@ struct node {
 typedef struct queue {
 	struct node *head;
 	struct node *tail;
-    volatile uint32_t lock;
+    uint32_t lock;
 	uint32_t size;
 	uint32_t max;
 } queue_t;

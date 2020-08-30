@@ -22,6 +22,7 @@
  *
  */
 #include "libc/types.h"
+#include "libc/sync.h"
 #include "autoconf.h"
 #ifdef CONFIG_ARCH_ARMV7M
 #include "arch/cores/armv7-m/m4-sync.h"
@@ -36,12 +37,13 @@
  * a ressource in the same time.
  * If value is 1, this semaphore is a mutex
  */
-void semaphore_init(uint8_t value, volatile uint32_t * semaphore)
+void semaphore_init(uint8_t value, uint32_t * semaphore)
 {
     if (!semaphore) {
         goto end;
     }
     *semaphore = value;
+    set_u32_with_membarrier(semaphore, value);
 end:
     return;
 }
@@ -49,12 +51,12 @@ end:
 /*
  * Try to lock the current semaphore
  */
-bool semaphore_trylock(volatile uint32_t * semaphore)
+bool semaphore_trylock(uint32_t * semaphore)
 {
     return core_semaphore_trylock(semaphore);
 }
 
-void semaphore_lock(volatile uint32_t * semaphore)
+void semaphore_lock(uint32_t * semaphore)
 {
     bool    is_locked = false;
 
@@ -65,7 +67,7 @@ void semaphore_lock(volatile uint32_t * semaphore)
 
 
 
-bool semaphore_release(volatile uint32_t * semaphore)
+bool semaphore_release(uint32_t * semaphore)
 {
     return core_semaphore_release(semaphore);
 }

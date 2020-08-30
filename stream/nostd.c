@@ -31,11 +31,11 @@
 #include "libc/semaphore.h"
 
 static volatile bool hexdump_mutex_initialized = false;
-static volatile uint32_t hexdump_mutex;
+static uint32_t hexdump_mutex;
 
 static int _hexdump(const uint8_t *bin, uint8_t len)
 {
-    /* NOTE: since our unerlying printf/log system call 
+    /* NOTE: since our unerlying printf/log system call
      * adds a line break at each call, we have to first
      * push the input of hexdump in a local buffer.
      * For stack size reasons, we limit the input buffer to 255 bytes,

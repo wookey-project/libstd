@@ -22,6 +22,7 @@
  *
  */
 #include "libc/types.h"
+#include "libc/sync.h"
 #include "autoconf.h"
 
 #ifdef CONFIG_ARCH_ARMV7M
@@ -37,20 +38,20 @@
  * value determine the number of concurrent threads that can access
  * a ressource in the same time.
  */
-void mutex_init(volatile uint32_t * mutex)
+void mutex_init(uint32_t * mutex)
 {
-    *mutex = 1;
+    set_u32_with_membarrier(mutex, 1);
 }
 
 /*
  * Try to lock the current semaphore
  */
-bool mutex_trylock(volatile uint32_t * mutex)
+bool mutex_trylock(uint32_t * mutex)
 {
     return core_semaphore_trylock(mutex);
 }
 
-void mutex_lock(volatile uint32_t * mutex)
+void mutex_lock(uint32_t * mutex)
 {
     bool    is_locked = false;
 
@@ -60,7 +61,7 @@ void mutex_lock(volatile uint32_t * mutex)
 }
 
 
-void mutex_unlock(volatile uint32_t * mutex)
+void mutex_unlock(uint32_t * mutex)
 {
     bool    ret;
 
@@ -69,7 +70,7 @@ void mutex_unlock(volatile uint32_t * mutex)
     } while (ret == false);
 }
 
-bool mutex_tryunlock(volatile uint32_t * mutex)
+bool mutex_tryunlock(uint32_t * mutex)
 {
     return core_semaphore_release(mutex);
 }
