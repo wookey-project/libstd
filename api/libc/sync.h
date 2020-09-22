@@ -68,5 +68,8 @@ inline void set_bool_with_membarrier(bool *target, bool val) {
     arch_data_membarrier();
 }
 
+inline void request_data_membarrier(void) {
+    arch_data_membarrier();
+}
 
 #endif/*__SYNC_H_*/
