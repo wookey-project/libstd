@@ -262,6 +262,7 @@ e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_
             \result == SYS_E_MAX ;
 */
 e_syscall_ret sys_log (logsize_t size, const char *msg);
+e_syscall_ret sys_alarm(uint32_t time, char* handler);
 
 /**
  * \}
