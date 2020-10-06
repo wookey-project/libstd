@@ -86,6 +86,7 @@ e_syscall_ret sys_ipc_IPC_SEND_ASYNC(uint32_t ipctype, uint8_t receiver, logsize
 e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_t *size, char *msg);
 
 e_syscall_ret sys_log (logsize_t size, const char *msg);
+e_syscall_ret sys_alarm(uint32_t time, char* handler);
 
 /**
  * \}

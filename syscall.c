@@ -158,6 +158,12 @@ __IN_SEC_VDSO e_syscall_ret sys_log(logsize_t size, const char *msg)
     return do_syscall(SVC_LOG, &args);
 }
 
+__IN_SEC_VDSO e_syscall_ret sys_alarm(uint32_t time, char* handler)
+{
+    struct gen_syscall_args args = { time, (uint32_t) handler, 0, 0 };
+    return do_syscall(SVC_ALARM, &args);
+}
+
 /*************************************************
  * sys_ipc functions
  ************************************************/

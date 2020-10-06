@@ -143,6 +143,12 @@ __IN_SEC_VDSO e_syscall_ret do_syscall(e_svc_type svc, __attribute__ ((unused))
                           :[svc] "i"(SVC_LOG),[args] "g"(args)
                           :"r0");
             return ret;
+        case SVC_ALARM:
+            asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
+                          :[ret] "=m"(ret)
+                          :[svc] "i"(SVC_ALARM),[args] "g"(args)
+                          :"r0");
+            return ret;
         case SVC_REGISTER_DEVICE:
             asm volatile ("mov r0, %[args]; svc %[svc]; str  r0, %[ret]\n"
                           :[ret] "=m"(ret)
