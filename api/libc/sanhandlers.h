@@ -22,6 +22,9 @@
 extern physaddr_t __s_SEC_sanhandlers;
 extern physaddr_t __e_SEC_sanhandlers;
 
+/*@
+  @ assigns \nothing;
+  */
 static inline int handler_sanity_check(physaddr_t h)
 {
         physaddr_t *start = &__s_SEC_sanhandlers;
@@ -37,18 +40,27 @@ static inline int handler_sanity_check(physaddr_t h)
 }
 
 /* Check handler with panic */
+
+/*@
+  @ assigns \nothing;
+  */
 static inline int handler_sanity_check_with_panic(physaddr_t h)
 {
 	if(handler_sanity_check(h)){
 		sys_panic();
 		/* This should not happen, but protect anyways */
+#ifndef __FRAMAC__
 		while(1){};
+#endif
 	}
 	else{
 		return 0;
 	}
 	/* This should not happen, but protect anyways */
+#ifndef __FRAMAC__
 	while(1){};
+#endif
+    return 0;
 }
 
 #else /* !CONFIG_STD_SANITIZE_HANDLERS */

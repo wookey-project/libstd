@@ -2,10 +2,23 @@
 #define __SYNC_H_
 
 #include "libc/types.h"
+#ifndef __FRAMAC__
+
+/* INFO:
+ * backend membarrier asm inline is not executed in FramaC context, because asm inline
+ * generates uncontroled peace of code that makes proof problem (assigns are no more
+ * validated as asm inline can't be evaluated).
+ * As this peace of code is very small (calling dmb instructions) we consider, using a
+ * manual review, that there is **no** border effect generating potential RTE or invalid
+ * assignation there.
+ */
+
 #ifdef CONFIG_ARCH_ARMV7M
 # include "libc/arch/cores/armv7-m/m4_sync.h"
 #else
 # error "unsupported arch backend for memory barrier API"
+#endif
+
 #endif
 
 /*
@@ -32,7 +45,9 @@
 inline void set_u8_with_membarrier(uint8_t *target, uint8_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
+#ifndef __FRAMAC__
     arch_data_membarrier();
+#endif
 }
 
 /*@
@@ -43,7 +58,9 @@ inline void set_u8_with_membarrier(uint8_t *target, uint8_t val) {
 inline void set_u16_with_membarrier(uint16_t *target, uint16_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
+#ifndef __FRAMAC__
     arch_data_membarrier();
+#endif
 }
 
 /*@
@@ -54,7 +71,9 @@ inline void set_u16_with_membarrier(uint16_t *target, uint16_t val) {
 inline void set_u32_with_membarrier(uint32_t *target, uint32_t val) {
     /* let the effective assignation be compiled here */
     *target = val;
+#ifndef __FRAMAC__
     arch_data_membarrier();
+#endif
 }
 
 /*@
@@ -65,11 +84,18 @@ inline void set_u32_with_membarrier(uint32_t *target, uint32_t val) {
 inline void set_bool_with_membarrier(bool *target, bool val) {
     /* let the effective assignation be compiled here */
     *target = val;
+#ifndef __FRAMAC__
     arch_data_membarrier();
+#endif
 }
 
+/*@
+  @ assigns \nothing;
+*/
 inline void request_data_membarrier(void) {
+#ifndef __FRAMAC__
     arch_data_membarrier();
+#endif
 }
 
 #endif/*__SYNC_H_*/

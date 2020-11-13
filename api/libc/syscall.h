@@ -262,6 +262,15 @@ e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_
             \result == SYS_E_MAX ;
 */
 e_syscall_ret sys_log (logsize_t size, const char *msg);
+
+/*@
+    @ assigns \result \from time, handler;
+    @ ensures \result == SYS_E_DONE  ||
+            \result == SYS_E_INVAL ||
+            \result == SYS_E_DENIED ||
+            \result == SYS_E_BUSY ||
+            \result == SYS_E_MAX ;
+*/
 e_syscall_ret sys_alarm(uint32_t time, char* handler);
 
 /**
@@ -281,6 +290,7 @@ e_syscall_ret sys_alarm(uint32_t time, char* handler);
 ** This syscall results in the immediate scheduling of another task without violation of the scheduling scheme.
 */
 /*@
+    @ assigns \nothing;
     @ ensures \result == SYS_E_DONE  ||
             \result == SYS_E_INVAL ||
             \result == SYS_E_DENIED ||
@@ -302,6 +312,7 @@ e_syscall_ret sys_yield(void);
 ** sys_exit can be called from any task context (ISR or main thread context)
 */
 /*@
+    @ assigns \nothing;
     @ ensures \result == SYS_E_DONE  ||
             \result == SYS_E_INVAL ||
             \result == SYS_E_DENIED ||
@@ -310,6 +321,7 @@ e_syscall_ret sys_yield(void);
 */
 e_syscall_ret sys_exit(void);
 /*@
+    @ assigns \nothing;
     @ ensures \result == SYS_E_DONE  ||
             \result == SYS_E_INVAL ||
             \result == SYS_E_DENIED ||
@@ -339,6 +351,7 @@ e_syscall_ret sys_reset(void);
 e_syscall_ret sys_sleep(uint32_t time, sleep_mode_t mode);
 
 /*@
+    @ assigns \nothing;
     @ ensures \result == SYS_E_DONE  ||
             \result == SYS_E_INVAL ||
             \result == SYS_E_DENIED ||

@@ -57,6 +57,10 @@ uint16_t htons(uint16_t hostshort);
  * Conforming to:
  *   POSIX.1-2001, POSIX.1-2008
  */
+
+/*@
+  @ assigns \nothing;
+  */
 uint32_t htonl(uint32_t hostlong);
 
 /*
@@ -69,6 +73,10 @@ uint32_t htonl(uint32_t hostlong);
  * Conforming to:
  *   POSIX.1-2001, POSIX.1-2008
  */
+/*@
+  @ assigns \nothing;
+  @ ensures \result == ((((uint8_t)(netshort && 0xff)) << 8) | (((uint16_t)(netshort && 0xff00)) >> 8));
+  */
 uint16_t ntohs(uint16_t netshort);
 
 /*
