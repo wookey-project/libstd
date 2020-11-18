@@ -76,6 +76,7 @@ __INLINE void clear_reg_bits(register_t reg, uint32_t value);
 /*
     TODO : proof (uint32_t) (((*reg) & mask) >> pos) == (uint32_t) (((*reg) & mask) >> pos)
 */
+
 __INLINE uint32_t get_reg_value(volatile const uint32_t * reg, uint32_t mask,
                                 uint8_t pos)
 {
@@ -235,6 +236,10 @@ __INLINE void set_reg16_bits(volatile uint16_t * reg, uint16_t value)
     *reg |= value;
 }
 
+/*@
+    @ requires \valid(reg);
+    @ assigns *reg ;
+*/
 __INLINE void clear_reg_bits(register_t reg, uint32_t value)
 {
     *reg &= (uint32_t) ~ (value);
