@@ -45,6 +45,10 @@
  * Conforming to:
  *   POSIX.1-2001, POSIX.1-2008
  */
+/*@
+  @ assigns \nothing;
+  @ ensures \result == (((hostshort & 0xff) << 8) | (hostshort >> 8));
+  */
 uint16_t htons(uint16_t hostshort);
 
 /*
@@ -60,6 +64,10 @@ uint16_t htons(uint16_t hostshort);
 
 /*@
   @ assigns \nothing;
+  @ ensures \result == (((hostlong & 0xff)   << 24)    |
+                        ((hostlong & 0xff00) << 8)     |
+                        ((hostlong & 0xff0000) >> 8)   |
+                        ((hostlong & 0xff000000) >> 24));
   */
 uint32_t htonl(uint32_t hostlong);
 
@@ -75,7 +83,7 @@ uint32_t htonl(uint32_t hostlong);
  */
 /*@
   @ assigns \nothing;
-  @ ensures \result == ((((uint8_t)(netshort && 0xff)) << 8) | (((uint16_t)(netshort && 0xff00)) >> 8));
+  @ ensures \result == (((netshort & 0xff) << 8) | (netshort >> 8));
   */
 uint16_t ntohs(uint16_t netshort);
 
@@ -89,6 +97,13 @@ uint16_t ntohs(uint16_t netshort);
  * Conforming to:
  *   POSIX.1-2001, POSIX.1-2008
  */
+/*@
+  @ assigns \nothing;
+  @ ensures \result == (((netlong & 0xff)   << 24)    |
+                        ((netlong & 0xff00) << 8)     |
+                        ((netlong & 0xff0000) >> 8)   |
+                        ((netlong & 0xff000000) >> 24));
+  */
 uint32_t ntohl(uint32_t netlong);
 
 #endif/*!ARPA_INET_H_*/
