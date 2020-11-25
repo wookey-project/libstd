@@ -6,6 +6,11 @@
 
 #ifdef CONFIG_STD_SANITIZE_HANDLERS
 
+/*
+ * INFO: when using FramaC, do not use sanhandlers API as this API is using ldscript based mechanism to check symbol allocation,
+ * using void* cast. This mechanism is **NOT** Frama-C compliant.
+ */
+
 #define CONCAT_(x,y) x##y
 #define CONCAT(x,y) CONCAT_(x,y)
 
@@ -22,9 +27,6 @@
 extern physaddr_t __s_SEC_sanhandlers;
 extern physaddr_t __e_SEC_sanhandlers;
 
-/*@
-  @ assigns \nothing;
-  */
 static inline int handler_sanity_check(physaddr_t h)
 {
         physaddr_t *start = &__s_SEC_sanhandlers;
@@ -41,9 +43,6 @@ static inline int handler_sanity_check(physaddr_t h)
 
 /* Check handler with panic */
 
-/*@
-  @ assigns \nothing;
-  */
 static inline int handler_sanity_check_with_panic(physaddr_t h)
 {
 	if(handler_sanity_check(h)){
