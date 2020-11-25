@@ -36,15 +36,16 @@ typedef enum {false = 0, true = 1} bool;
 /* Secure boolean against fault injections for critical tests */
 typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 
+/* if stdint is not already defined, define it here */
 /* some useful stdint content */
 #ifndef UINT32_MAX
-# define UINT32_MAX 0xffffffff
+# define UINT32_MAX (0xffffffff)
 #endif
 #ifndef UINT16_MAX
-# define UINT16_MAX 0xffff
+# define UINT16_MAX (0xffff)
 #endif
 #ifndef UINT8_MAX
-# define UINT8_MAX  0xff
+# define UINT8_MAX  (0xff)
 #endif
 
 #if defined(__CC_ARM)
