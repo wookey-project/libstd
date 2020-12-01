@@ -483,9 +483,9 @@ static uint8_t print_handle_format_string(const char *fmt, va_list * args,
                     /*
                      * Handling long and long long int
                      */
-                    long    lval;
-                    long long llval;
-                    uint8_t len;
+                    long    lval = 0;
+                    long long llval = 0;
+                    uint8_t len = 0;
 
                     if (fs_prop.started == false) {
                         goto err;
@@ -528,9 +528,9 @@ static uint8_t print_handle_format_string(const char *fmt, va_list * args,
                     /*
                      * Handling long and long long int
                      */
-                    short   s_val;
-                    unsigned char uc_val;
-                    uint8_t len;
+                    short   s_val = 0;
+                    unsigned char uc_val = 0;
+                    uint8_t len = 0;
 
                     if (fs_prop.started == false) {
                         goto err;

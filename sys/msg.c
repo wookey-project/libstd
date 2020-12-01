@@ -47,7 +47,7 @@
 #ifdef CONFIG_STD_SYSV_MSQ
 
 /* TODO: this must be associated to the kernel max IPC msg size, not hard-coded */
-#define MAX_IPC_MSG_SIZE 128
+#define MAX_IPC_MSG_SIZE 68 /* mtext is at most u8[64] + mtype (4 chars) */
 
 /* A message received by the kernel genuine type is char*. Though, its effective type here is struct msgbuf.
  * We use an union for clean cast. */
@@ -56,31 +56,35 @@ typedef union {
   char          ewok_msg[MAX_IPC_MSG_SIZE];
 } qsmsg_msgbuf_data_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   qsmsg_msgbuf_data_t msg;
   uint8_t             msg_size;
   bool                set;
 } qmsg_msgbuf_t;
 
-typedef struct {
-    bool    set;
-    key_t   key;
-    uint8_t id;
+typedef struct __attribute__((packed)) {
     uint32_t msg_lspid; /* for broadcasting recv queue, id of the last sender */
 #if 0
     uint32_t msg_qnum; /* number of msg in queue. With EwoK IPC, only one msg at a time */
 #endif
-    uint16_t      msg_perm; /* queue permission, used for the broadcast recv queue case (send forbidden) */
     uint32_t      msg_stime; /* time of last snd event */
     uint32_t      msg_rtime; /* time of last rcv event */
     qmsg_msgbuf_t msgbuf_v[CONFIG_STD_SYSV_MSQ_DEPTH];
     uint8_t       msgbuf_ent;
+    uint16_t      msg_perm; /* queue permission, used for the broadcast recv queue case (send forbidden) */
+    bool          set;
+    key_t         key;
+    uint8_t       id;
 } qmsg_entry_t;
 
 /*
  * list of all msg queues. If key == 0, the message queue is not initalised.
  */
-static qmsg_entry_t qmsg_vector[CONFIG_MAXTASKS+1] = { 0 };
+static qmsg_entry_t qmsg_vector[CONFIG_MAXTASKS+1];
+
+void msg_zeroify(void) {
+    memset(&(qmsg_vector[0]), 0x0, (CONFIG_MAXTASKS+1)*sizeof(qmsg_entry_t));
+}
 
 /*
  * POSIX message passing API

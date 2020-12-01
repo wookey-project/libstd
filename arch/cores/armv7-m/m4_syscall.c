@@ -3,6 +3,7 @@
 #include "libc/nostd.h"
 #include "stream/stream_priv.h"
 #include "arch/cores/armv7-m/m4_syscall.h"
+#include "arch/cores/armv7-m/m4_zeroify.h"
 
 /* Global variable holding the stack canary value */
 volatile uint32_t __stack_chk_guard = 0;
@@ -50,7 +51,13 @@ __IN_SEC_VDSO void do_starttask(uint32_t slot, uint32_t seed)
     ctxid = CTX_THR1;
     __stack_chk_guard = seed;
 
-    init_ring_buffer();
+    /* any libc service that requires explicit data zeroification at boot time
+     * can declare a void(*)(void) pointer in the glob_array[] vector of m4_zeroify.c
+     * file. The zeroify_libc_globals() will call all the services zerofication handlers
+     * at boot time before executing the task.
+     * This avoid to define global that will be stored in .data because of hardcoded
+     * = 0 value. Instead they will be part of .bss, not stored in flash. */
+    zeroify_libc_globals();
 
     /* Initialize the stack protector for all other task's functions */
     _main(slot);

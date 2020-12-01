@@ -45,8 +45,8 @@ CFLAGS += -Iarpa/
 CFLAGS += -Isys/
 # here we need libecc
 CFLAGS += -I$(PROJ_FILES)/externals/libecc/src $(EXTERNAL_CFLAGS) $(LIBSIGN_CFLAGS)
-CFLAGS += -MMD -MP
 CFLAGS += -Idrbg/
+CFLAGS += -MMD -MP
 
 
 #############################################################
