@@ -72,7 +72,7 @@ typedef struct {
     uint32_t      msg_stime; /* time of last snd event */
     uint32_t      msg_rtime; /* time of last rcv event */
     qmsg_msgbuf_t msgbuf_v[MSG_MAX_DEPTH];
-    bool          msgbuf_full;
+    uint8_t       msgbuf_ent;
 } qmsg_entry_t;
 
 /*
@@ -168,7 +168,6 @@ int msgget(key_t key, int msgflg)
     qmsg_vector[tid].msg_perm = 0x666; /* unicast communication. Permission is handled by kernel */
     qmsg_vector[tid].msg_stime = 0;
     qmsg_vector[tid].msg_rtime = 0;
-    qmsg_vector[tid].set = true;
     qmsg_vector[tid].set = true;
     errcode = tid;
 err:
@@ -334,7 +333,7 @@ tryagain:
         }
     }
     /* no cached message found ? if msgbuf_vector is full, NOMEM */
-    if (qmsg_vector[msqid].msgbuf_full == true) {
+    if (qmsg_vector[msqid].msgbuf_ent == MSG_MAX_DEPTH) {
         errcode = -1;
         __libstd_set_errno(ENOMEM);
         goto err;
@@ -382,6 +381,7 @@ tryagain:
     }
     /* set recv msg size, removing the mtype field size */
     qmsg_vector[msqid].msgbuf_v[free_cell].msg_size = rcv_size - sizeof(long);
+    qmsg_vector[msqid].msgbuf_ent++;
 
     /* Now that the buffer received. Check its content. Here, like for cache check, we must check
      * mtype according to msgflg */
@@ -413,6 +413,9 @@ tryagain:
 
     /* message doesn't match at all... cache it for next time */
     qmsg_vector[msqid].msgbuf_v[free_cell].set = true;
+    qmsg_vector[msqid].msgbuf_ent++;
+
+    /* is the queue full now ? */
 
     /* In the case of msgflag without IPC_NOWAIT, if the message of type mtype is not found
      * (i.e. we arrived here), we try again, until the queue is full. */
@@ -432,7 +435,7 @@ err:
 handle_cached_msg:
     rcv_size = (msgsz < qmsg_vector[msqid].msgbuf_v[i].msg_size) ? msgsz : qmsg_vector[msqid].msgbuf_v[i].msg_size;
     memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtext.u8[0]), rcv_size);
-    qmsg_vector[msqid].msgbuf_full = false;
+    qmsg_vector[msqid].msgbuf_ent--;
     qmsg_vector[msqid].msgbuf_v[i].set = false;
     return rcv_size;
 }
