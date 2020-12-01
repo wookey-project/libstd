@@ -45,7 +45,7 @@
 
 #define IPC_CREAT	01000		/* Create key if key does not exist. */
 #define IPC_EXCL	02000		/* Fail if key exists.  */
-#define IPC_NOWAIT	04000		/* Do not wait, return with EAGAIN flag */
+#define IPC_NOWAIT	04000		/* Do not wait, return with EAGAIN flag in case of error */
 
 /* generic IPC key_t for EwoK IPC (remote task name) */
 typedef char const * key_t;
@@ -60,7 +60,19 @@ typedef union {
 } msg_mtext_union_t;
 
 /* Here, we hold a word-aligned structure in order to avoid
- * any unaligned access to mtex fields for u32 & u64 types */
+ * any unaligned access to mtex fields for u32 & u64 types.
+ * The difference with the POSIX type is the mtext definition,
+ * in order to simplify the content typing. Though, mtype handling
+ * is the same:
+ * msgsnd() must send typed messages (i.e. data containing a mtype field
+ * in its first 4 bytes)
+ * msgrcv() get back the mtext content directly, without the mtype field,
+ * as the type is requested in argument.
+ *
+ * The message queue handles messages while not requested by msgrcv() in a
+ * local cache.
+ * Usual SysV message flags (see above) can be used to modify the API behavior
+ * w. respect for the POSIX standard. */
 struct msgbuf {
     long mtype;
     msg_mtext_union_t mtext;
@@ -88,11 +100,26 @@ int msgget(key_t key, int msgflg);
 
 /*
  * Send a message to the given queue
+ *
+ * sending a message without blocking
+ * msgsnd(qid, buf, msize, IPC_NOWAIT);
  */
 int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
 
 /*
  * Receive a message from the given queue
+ *
+ * Receive a message in buf of any type but MAGIC_TYPE_X, that can be truncated
+ * if its size is bigger than msgsz, without blocking (EAGAIN in case of nothing to read).
+ *
+ * msgrcv(qid, buf, msgsz, MAGIC_TYPE_X, IPC_NOWAIT| MSG_NOERROR|MSG_EXCEPT);
+ *
+ * Receive a message of type MAGIC_TYPE_Y only, that can't be truncated.
+ * Blocks if no corresponding message upto cache full (in that case return with ENOMEM).
+ * If a message of the corresponding type exists but is too big, return with E2BIG.
+ *
+ * msgrcv(qid, bug, msgsz, MAGIC_TYPE_Y, 0);
+ *
  */
 ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
                int msgflg);
