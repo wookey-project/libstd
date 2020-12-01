@@ -18,6 +18,24 @@ config STD_DRBG
   If DRBG is not selected, the platform TRNG is used as
   the raw random generator, which NOT a good practice.
 
+config STD_SYSV_MSQ
+  bool "Support for SystemV Message queues"
+  default y
+  ---help---
+  Support for SystemV Message queues (msgget(),msgsnd()
+  and msgrcv() API from the SystemV and POSIX standard.
+
+if STD_SYSV_MSQ
+  config STD_SYSV_MSQ_DEPTH
+  int "SystemV Message queue depth"
+  range 1 16
+  default 1
+  ---help---
+  SystemV message queue maximum supported queue depth.
+  Beware that the queue depth is consuming a lot of memory.
+
+endif
+
 if STD_DRBG
 menu "DRBG configuration"
 

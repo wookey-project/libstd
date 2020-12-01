@@ -37,6 +37,7 @@
 #include "autoconf.h"
 #include "libc/sys/types.h"
 
+#ifdef CONFIG_STD_SYSV_MSQ
 
 /* messaging mode */
 #define MSG_NOERROR    010000 /* truncate silently message if too long */
@@ -123,5 +124,7 @@ int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
  */
 ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp,
                int msgflg);
+
+#endif/*!CONFIG_STD_SYSV_MSQ*/
 
 #endif/*!SYS_MSG_H_*/

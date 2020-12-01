@@ -33,6 +33,7 @@
  */
 
 
+#include "autoconf.h"
 #include "libc/stdio.h"
 #include "libc/stdint.h"
 #include "libc/sys/msg.h"
@@ -43,9 +44,10 @@
 
 #include "errno.h"
 
+#ifdef CONFIG_STD_SYSV_MSQ
+
 /* TODO: this must be associated to the kernel max IPC msg size, not hard-coded */
 #define MAX_IPC_MSG_SIZE 128
-#define MSG_MAX_DEPTH 2
 
 /* A message received by the kernel genuine type is char*. Though, its effective type here is struct msgbuf.
  * We use an union for clean cast. */
@@ -71,7 +73,7 @@ typedef struct {
     uint16_t      msg_perm; /* queue permission, used for the broadcast recv queue case (send forbidden) */
     uint32_t      msg_stime; /* time of last snd event */
     uint32_t      msg_rtime; /* time of last rcv event */
-    qmsg_msgbuf_t msgbuf_v[MSG_MAX_DEPTH];
+    qmsg_msgbuf_t msgbuf_v[CONFIG_STD_SYSV_MSQ_DEPTH];
     uint8_t       msgbuf_ent;
 } qmsg_entry_t;
 
@@ -305,7 +307,7 @@ ssize_t msgrcv(int msqid,
 tryagain:
 
     /* check local previously stored messages */
-    for (i = 0; i < MSG_MAX_DEPTH; ++i) {
+    for (i = 0; i < CONFIG_STD_SYSV_MSQ_DEPTH; ++i) {
         if (qmsg_vector[msqid].msgbuf_v[i].set == true) {
             /* no EXCEPT mode, try to match msgtyp */
             if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
@@ -333,7 +335,7 @@ tryagain:
         }
     }
     /* no cached message found ? if msgbuf_vector is full, NOMEM */
-    if (qmsg_vector[msqid].msgbuf_ent == MSG_MAX_DEPTH) {
+    if (qmsg_vector[msqid].msgbuf_ent == CONFIG_STD_SYSV_MSQ_DEPTH) {
         errcode = -1;
         __libstd_set_errno(ENOMEM);
         goto err;
@@ -439,3 +441,5 @@ handle_cached_msg:
     qmsg_vector[msqid].msgbuf_v[i].set = false;
     return rcv_size;
 }
+
+#endif
