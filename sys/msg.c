@@ -135,6 +135,7 @@ int msgget(key_t key, int msgflg)
         qmsg_vector[tid].msg_rtime = 0;
         qmsg_vector[tid].set = true;
         errcode = tid;
+        goto err;
     }
 
     /* Here, the qmsg has not yet been declared, request the id from the kernel (i.e. the remote task id) */
