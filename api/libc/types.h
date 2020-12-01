@@ -25,28 +25,15 @@
 #define TYPES_H_
 
 #include "autoconf.h"
+#include "libc/sys/types.h"
 
-#ifdef CONFIG_ARCH_ARMV7M
-# include "libc/arch/cores/armv7-m/types.h"
-#else
-# error "architecture not yet supported"
-#endif
+#define KBYTE 1024
+#define MBYTE 1048576
+#define GBYTE 1073741824
 
 typedef enum {false = 0, true = 1} bool;
 /* Secure boolean against fault injections for critical tests */
 typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
-
-/* if stdint is not already defined, define it here */
-/* some useful stdint content */
-#ifndef UINT32_MAX
-# define UINT32_MAX (0xffffffff)
-#endif
-#ifndef UINT16_MAX
-# define UINT16_MAX (0xffff)
-#endif
-#ifndef UINT8_MAX
-# define UINT8_MAX  (0xff)
-#endif
 
 #if defined(__CC_ARM)
 # define __ASM            __asm  /* asm keyword for ARM Compiler    */

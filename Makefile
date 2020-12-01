@@ -42,6 +42,7 @@ CFLAGS += -Istream/
 CFLAGS += -Istring/
 CFLAGS += -Iembed/
 CFLAGS += -Iarpa/
+CFLAGS += -Isys/
 # here we need libecc
 CFLAGS += -I$(PROJ_FILES)/externals/libecc/src $(EXTERNAL_CFLAGS) $(LIBSIGN_CFLAGS)
 CFLAGS += -MMD -MP
@@ -65,6 +66,7 @@ SRC += $(wildcard $(SRC_DIR)/stream/*.c)
 SRC += $(wildcard $(SRC_DIR)/string/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/*.c)
 SRC += $(wildcard $(SRC_DIR)/arpa/*.c)
+SRC += $(wildcard $(SRC_DIR)/sys/*.c)
 SRC += $(wildcard $(SRC_DIR)/drbg/*.c)
 SRC += $(wildcard $(SRC_DIR)/embed/arch/cores/armv7-m/*.c)
 

@@ -24,8 +24,10 @@
 #ifndef STDIO_H_
 #define STDIO_H_
 
+#include "libc/sys/types.h"
 #include "libc/stdarg.h"
 #include "libc/types.h"
+#include "libc/stdint.h"
 
 /*******************************************
  * Implementation of POSIX stdio

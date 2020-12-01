@@ -14,9 +14,8 @@ typedef uint8_t logsize_t;
 typedef long time_t;
 
 
-#define KBYTE 1024
-#define MBYTE 1048576
-#define GBYTE 1073741824
+/* ARMv7M is 32bit wordsize core */
+#define __WORDSIZE 32
 
 #define NULL				((void *)0)
 
@@ -27,7 +26,7 @@ typedef uint32_t physaddr_t;
  * even when using Frama-C. This should prevent some ToCToU */
 typedef volatile uint32_t* register_t;
 
-typedef unsigned int size_t;
-typedef int ssize_t;
+typedef unsigned int __size_t;
+typedef int __ssize_t;
 
 #endif/*!ARCH_TYPES_H*/

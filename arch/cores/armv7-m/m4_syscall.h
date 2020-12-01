@@ -2,6 +2,7 @@
 #define M4_SYSCALL_H_
 
 #include "libc/types.h"
+#include "libc/syscall.h"
 #include "kernel/src/C/exported/syscalls.h"
 
 /* This macros permits to add some specific functions to a section named
@@ -22,9 +23,21 @@
  */
 #define __IN_SEC_VDSO __attribute__((section(".vdso")))
 
+typedef enum {
+    CTX_ISR = 0,
+    CTX_THR1 = 1,
+    CTX_THR2 = 2,
+    CTX_THR3 = 3,
+    CTX_THR4 = 4,
+    /* Future proof multithreads support (TODO: yet not SMP compatible for a given task) */
+} ctx_id_t;
+
+
 /**
 ** \private
 */
 e_syscall_ret do_syscall(e_svc_type svc,  __attribute__ ((unused)) struct gen_syscall_args * args);
+
+uint32_t get_current_ctx_id(void);
 
 #endif /*!SYSCALL_H_ */

@@ -6,6 +6,12 @@
 
 /* Global variable holding the stack canary value */
 volatile uint32_t __stack_chk_guard = 0;
+/* Global variable holding the current thread type */
+static volatile uint32_t ctxid;
+
+uint32_t get_current_ctx_id(void) {
+    return ctxid;
+}
 
 /**
  ** \private
@@ -41,6 +47,7 @@ int     _main(uint32_t slot);
 
 __IN_SEC_VDSO void do_starttask(uint32_t slot, uint32_t seed)
 {
+    ctxid = CTX_THR1;
     __stack_chk_guard = seed;
 
     init_ring_buffer();
@@ -79,9 +86,12 @@ __IN_SEC_VDSO void __stack_chk_fail(void)
  */
 __IN_SEC_VDSO void do_startisr(handler_t handler, uint8_t irq, uint32_t status, uint32_t data)
 {
+    uint32_t oldctxid = ctxid;
+    ctxid = CTX_ISR;
     if (handler) {
         handler(irq, status, data);
     }
+    ctxid = oldctxid;
 
     /* End of ISR */
     asm volatile ("svc %0\n"::"i" (SVC_EXIT):);
