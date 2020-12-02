@@ -1,6 +1,8 @@
 #ifndef ARCH_TYPES_H
 #define ARCH_TYPES_H
 
+#define __IN_SEC_VDSO __attribute__((section(".vdso")))
+
 typedef signed char int8_t;
 typedef signed short int16_t;
 typedef signed int int32_t;

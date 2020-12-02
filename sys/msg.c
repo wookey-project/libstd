@@ -79,6 +79,10 @@ typedef struct __attribute__((packed)) {
 
 /*
  * list of all msg queues. If key == 0, the message queue is not initalised.
+ *
+ * All VDSO-called functions (here by zeroify_libc_globals) must
+ * be in VDSO section, as they are pushed into .init sections
+ * avoiding the LD garbage collector to purge them.
  */
 static qmsg_entry_t qmsg_vector[CONFIG_MAXTASKS+1];
 
@@ -86,7 +90,7 @@ static qmsg_entry_t qmsg_vector[CONFIG_MAXTASKS+1];
  * Zeroify properly the qmsg_vector. This function is called at task early init state, before main,
  * by the zeroify_libc_globals() callback.
  */
-void msg_zeroify(void) {
+__IN_SEC_VDSO void msg_zeroify(void) {
     for (uint8_t i = 0; i < CONFIG_MAXTASKS+1; ++i) {
         qmsg_vector[i].msg_lspid = 0;
         qmsg_vector[i].msg_stime = 0;

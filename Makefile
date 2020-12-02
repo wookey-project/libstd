@@ -26,13 +26,12 @@ APP_BUILD_DIR = $(BUILD_DIR)/libs/$(LIB_NAME)
 CFLAGS := $(LIBS_CFLAGS)
 # this lib is special: some of its functions are called by the kernel and as such must NOT be
 # purged at strip time by the compiler.
-# This flag block any attempt to delete unused symbols from the object file as they may be
-# called from the kernel
-CFLAGS += -I. -Iarch/cores/$(CONFIG_ARCH) -MMD -MP  -Warray-bounds=0
 # this is specific to libstd, as this lib hold the task entrypoints (do_startisr and do_starttask)
 # which whould be overriden by the -Wl,gc -ffunction-sections
-CFLAGS += -fno-function-sections
+# FIXME: test using .init sextion  
+#CFLAGS += -fno-function-sections
 
+CFLAGS += -I. -Iarch/cores/$(CONFIG_ARCH)
 # about local subdirs
 # libstd API
 CFLAGS += -Iapi/

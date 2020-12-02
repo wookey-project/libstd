@@ -98,9 +98,12 @@ static uint32_t rb_lock = 1;
  *
  * As a consequence, it has to be initialized at boot time.
  * This is done by this function, called by do_starttask().
+ *
+ * All VDSO-called functions (here by zeroify_libc_globals) must
+ * be in VDSO section, as they are pushed into .init sections
+ * avoiding the LD garbage collector to purge them.
  */
-void init_ring_buffer(void)
-{
+__IN_SEC_VDSO void init_ring_buffer(void) {
     /* init flags */
     int     i = 0;
 

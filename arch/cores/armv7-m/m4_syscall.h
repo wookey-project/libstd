@@ -21,7 +21,6 @@
  * as to be mapped in the same region as the overall userspace text content.
  * Remember: there is no memory abstraction in MPU-based systems.
  */
-#define __IN_SEC_VDSO __attribute__((section(".vdso")))
 
 typedef enum {
     CTX_ISR = 0,
