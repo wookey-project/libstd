@@ -58,7 +58,6 @@ __IN_SEC_VDSO void do_starttask(uint32_t slot, uint32_t seed)
      * This avoid to define global that will be stored in .data because of hardcoded
      * = 0 value. Instead they will be part of .bss, not stored in flash. */
     zeroify_libc_globals();
-    init_ring_buffer();
 
     /* Initialize the stack protector for all other task's functions */
     _main(slot);

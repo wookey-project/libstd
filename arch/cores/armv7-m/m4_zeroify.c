@@ -23,6 +23,7 @@ static const zeroify_p glob_array[] = {
 #if CONFIG_STD_SYSV_MSQ
     msg_zeroify,
 #endif
+    init_ring_buffer,
     NULL
 };
 
