@@ -34,5 +34,6 @@ void zeroify_libc_globals(void) {
     uint8_t i = 0;
     while (glob_array[i] != NULL) {
         glob_array[i]();
+        i++;
     }
 }
