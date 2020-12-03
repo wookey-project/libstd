@@ -232,9 +232,11 @@ int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg)
     }
 
     if (msgflg & IPC_NOWAIT) {
-        ret = sys_ipc(IPC_SEND_ASYNC, msqid, msgsz, (const char*)msgp);
+        /* sending size+mtype (size specify the mtext len */
+        ret = sys_ipc(IPC_SEND_ASYNC, msqid, msgsz + sizeof(long), (const char*)msgp);
     } else {
-        ret = sys_ipc(IPC_SEND_SYNC, msqid, msgsz, (const char*)msgp);
+        /* sending size+mtype (size specify the mtext len */
+        ret = sys_ipc(IPC_SEND_SYNC, msqid, msgsz + sizeof(long), (const char*)msgp);
     }
     switch (ret) {
         case SYS_E_INVAL:
@@ -369,6 +371,7 @@ tryagain:
         rcv_size = 128;
     } else {
         /* or not */
+        /* recv size+mtype (size specify the mtext len) */
         rcv_size = msgsz + sizeof(long);
     }
 
@@ -404,6 +407,7 @@ tryagain:
     }
     /* set recv msg size, removing the mtype field size */
     qmsg_vector[msqid].msgbuf_v[free_cell].msg_size = rcv_size - sizeof(long);
+    qmsg_vector[msqid].msgbuf_v[free_cell].set = true;
     qmsg_vector[msqid].msgbuf_ent++;
 
     /* Now that the buffer received. Check its content. Here, like for cache check, we must check
@@ -433,10 +437,6 @@ tryagain:
         i = free_cell;
         goto handle_cached_msg;
     }
-
-    /* message doesn't match at all... cache it for next time */
-    qmsg_vector[msqid].msgbuf_v[free_cell].set = true;
-    qmsg_vector[msqid].msgbuf_ent++;
 
     /* is the queue full now ? */
 
