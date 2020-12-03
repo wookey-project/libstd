@@ -82,8 +82,25 @@ typedef struct __attribute__((packed)) {
  */
 static qmsg_entry_t qmsg_vector[CONFIG_MAXTASKS+1];
 
+/*
+ * Zeroify properly the qmsg_vector. This function is called at task early init state, before main,
+ * by the zeroify_libc_globals() callback.
+ */
 void msg_zeroify(void) {
-    memset(&(qmsg_vector[0]), 0x0, (CONFIG_MAXTASKS+1)*sizeof(qmsg_entry_t));
+    for (uint8_t i = 0; i < CONFIG_MAXTASKS+1; ++i) {
+        qmsg_vector[i].msg_lspid = 0;
+        qmsg_vector[i].msg_stime = 0;
+        qmsg_vector[i].msg_rtime = 0;
+        for (uint8_t j = 0; j < CONFIG_STD_SYSV_MSQ_DEPTH; ++j) {
+            qmsg_vector[i].msgbuf_v[j].set = false;
+            qmsg_vector[i].msgbuf_v[j].msg_size = 0;
+        }
+        qmsg_vector[i].msgbuf_ent = 0;
+        qmsg_vector[i].msg_perm = 0;
+        qmsg_vector[i].set = false;
+        qmsg_vector[i].key = NULL;
+        qmsg_vector[i].id = 0;
+    }
 }
 
 /*
