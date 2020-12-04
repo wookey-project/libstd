@@ -44,7 +44,7 @@
 
 #include "errno.h"
 
-#ifdef CONFIG_STD_SYSV_MSQ
+#ifdef CONFIG_STD_POSIX_SYSV_MSQ
 
 /* TODO: this must be associated to the kernel max IPC msg size, not hard-coded */
 #define MAX_IPC_MSG_SIZE 68 /* mtext is at most u8[64] + mtype (4 chars) */
@@ -69,7 +69,7 @@ typedef struct __attribute__((packed)) {
 #endif
     uint32_t      msg_stime; /* time of last snd event */
     uint32_t      msg_rtime; /* time of last rcv event */
-    qmsg_msgbuf_t msgbuf_v[CONFIG_STD_SYSV_MSQ_DEPTH];
+    qmsg_msgbuf_t msgbuf_v[CONFIG_STD_POSIX_SYSV_MSQ_DEPTH];
     uint8_t       msgbuf_ent;
     uint16_t      msg_perm; /* queue permission, used for the broadcast recv queue case (send forbidden) */
     bool          set;
@@ -95,7 +95,7 @@ __IN_SEC_VDSO void msg_zeroify(void) {
         qmsg_vector[i].msg_lspid = 0;
         qmsg_vector[i].msg_stime = 0;
         qmsg_vector[i].msg_rtime = 0;
-        for (uint8_t j = 0; j < CONFIG_STD_SYSV_MSQ_DEPTH; ++j) {
+        for (uint8_t j = 0; j < CONFIG_STD_POSIX_SYSV_MSQ_DEPTH; ++j) {
             qmsg_vector[i].msgbuf_v[j].set = false;
             qmsg_vector[i].msgbuf_v[j].msg_size = 0;
         }
@@ -334,7 +334,7 @@ ssize_t msgrcv(int msqid,
 tryagain:
 
     /* check local previously stored messages */
-    for (i = 0; i < CONFIG_STD_SYSV_MSQ_DEPTH; ++i) {
+    for (i = 0; i < CONFIG_STD_POSIX_SYSV_MSQ_DEPTH; ++i) {
         if (qmsg_vector[msqid].msgbuf_v[i].set == true) {
             /* no EXCEPT mode, try to match msgtyp */
             if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
@@ -362,7 +362,7 @@ tryagain:
         }
     }
     /* no cached message found ? if msgbuf_vector is full, NOMEM */
-    if (qmsg_vector[msqid].msgbuf_ent == CONFIG_STD_SYSV_MSQ_DEPTH) {
+    if (qmsg_vector[msqid].msgbuf_ent == CONFIG_STD_POSIX_SYSV_MSQ_DEPTH) {
         errcode = -1;
         __libstd_set_errno(ENOMEM);
         goto err;

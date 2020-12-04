@@ -21,40 +21,50 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef RANDOM_H_
-#define RANDOM_H_
+#ifndef LIST_H
+# define LIST_H
 
-#include "autoconf.h"
 #include "libc/types.h"
+#include "libc/malloc.h"
+#include "libc/queue.h"
+
+#define MAX_LIST_DEPTH 512
+
+struct list_node {
+	struct list_node *next;
+	struct list_node *prev;
+	void   *data;
+    uint64_t key;
+};
 
 
-#if CONFIG_STD_POSIX_RAND
-#define RAND_MAX 32767
 
-/* ISOC functions for random. These provide *NON SECURE* random,
- * that can be OK for non critical applications.
+typedef struct list {
+	struct list_node *head;
+    uint32_t lock;
+	uint32_t size;
+	uint32_t max;
+} list_t;
+
+
+/*
+ * Create new ordered list
  */
-int rand(void);
+mbed_error_t list_create(uint32_t capacity, list_t *list);
 
-int rand_r(unsigned int *seedp);
-
-void srand(unsigned int seed);
-
-#endif
-
-/**
- * \fn get_random
- * \brief load random content from the system entropy source into a buffer
- *
- * \param buf  the buffer in which the random values is to be stored
- * \param len  the amount of random bytes requested
- *
- * \return MBED_ERROR_NONE if the RNG source fullfill the buffer, or:
- *    MBED_ERROR_DENIED if the task is not authorized to request RNG source
- *    MBED_ERROR_BUSY if the RNG source entropy is not ready
- *    MBED_ERROR_INVPARAM if len is not 32bit aligned or the buffer is NULL.
- *
+/*
+ * Insert an item into the list (ordered by key)
  */
-mbed_error_t  get_random(unsigned char *buf, uint16_t len);
+mbed_error_t list_insert(list_t *l, void *data, uint64_t key);
 
-#endif
+/*
+ * Remove the first item of key 'key' from the list
+ */
+mbed_error_t list_remove(list_t *l, void **data, uint64_t key);
+
+/*
+ * update the first item of key 'key' with new key newkey (order preserved)
+ */
+mbed_error_t list_update(list_t*l, uint64_t key, uint64_t newkey);
+
+#endif /* LIST_H_ */

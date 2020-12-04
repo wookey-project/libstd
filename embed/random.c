@@ -34,6 +34,7 @@
 #include "autoconf.h"
 
 
+#ifdef STD_POSIX_RAND
 /***** "Unsecure" ISO C random using a linear congruential generator (LGC) *****/
 /* WARNING: this egenrator is *NOT* cryptographically secure!! */
 /*
@@ -50,7 +51,7 @@ int rand(void)
 	rand_seed = (rand_seed * 1103515245) + 12345;
 	return (int)((unsigned int)(rand_seed/65536) % (RAND_MAX + 1));
 
-} 
+}
 
 void srand(unsigned int seed)
 {
@@ -64,11 +65,12 @@ int rand_r(unsigned int *seedp)
 	(*seedp) = ((*seedp) * 1103515245) + 12345;
 	return (int)((unsigned int)((*seedp)/65536) % (RAND_MAX + 1));
 }
+#endif
 
 
 /***** "Secure" random using a DRBG and a TRNG *****/
 /*
- * The main primitive used for our CS (Cryptographically Secure) PRNG is 
+ * The main primitive used for our CS (Cryptographically Secure) PRNG is
  * HMAC-DRBG as standardized bu NIST 800-90A. HMAC-DRBG has been prefered to
  * other designs (Hash-DRBG and CTR-DRG) because it has a cleaner design, and
  * inherits some security proofs (see https://www.cs.cmu.edu/~kqy/resources/thesis.pdf).
@@ -93,7 +95,7 @@ static int drbg_init(void)
 	memcpy(personnalisation_string, (char*)&drbg_init, sizeof(void*));
 	/* We also concatenate some SRAM address (also specific to the task) */
 	memcpy(personnalisation_string+sizeof(void*), (char*)&drbg_init_done, sizeof(void*));
-	/* Finally, we concatenate 64 bits random to make the instantiation unique */	
+	/* Finally, we concatenate 64 bits random to make the instantiation unique */
 	if(get_entropy(personnalisation_string+(2*sizeof(void*)), (2*sizeof(void*)))){
 		goto err;
 	}
@@ -162,7 +164,7 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
 #else /* We do not use any DRBG, so we directly use the syscall to get it from kernel */
 {
  	mbed_error_t err = MBED_ERROR_NONE;
-	
+
 	if((err = get_entropy(buf, len)) != MBED_ERROR_NONE){
 		goto error;
 	}
