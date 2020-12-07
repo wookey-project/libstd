@@ -2,10 +2,11 @@
 #include "libc/list.h"
 #include "libc/stdio.h"
 #include "libc/nostd.h"
+#include "libc/string.h"
 #include "libc/semaphore.h"
 
 
-#define LIST_DEBUG 1
+#define LIST_DEBUG 0
 
 /* FIXME: get_current_ctx_id() should not be there */
 #include "arch/cores/armv7-m/m4_syscall.h"
@@ -82,7 +83,7 @@ mbed_error_t list_insert(list_t *l, void *data, uint64_t key)
         mutex_lock(&l->lock);
     }
     n->data = data;
-    n->key = key;
+    memcpy(&n->key, &key, sizeof(uint64_t));
 
 #if LIST_DEBUG
     printf("[list] insert data with key:\n");
@@ -185,6 +186,9 @@ mbed_error_t list_remove(list_t *l, void **data, uint64_t key)
     }
     if (n->prev) {
         n->prev->next = n->next;
+    }
+    if (l->head == n) {
+        l->head = NULL;
     }
     if (wfree((void **) &n) != 0) {
 #if LIST_DEBUG

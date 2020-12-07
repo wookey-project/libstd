@@ -6,6 +6,7 @@
 #include "libc/nostd.h"
 #include "libc/stdio.h"
 #include "libc/semaphore.h"
+#include "libc/string.h"
 #include "errno.h"
 
 /* FIXME: get_current_ctx_id() should not be there */
@@ -13,7 +14,7 @@
 
 #ifdef CONFIG_STD_POSIX_TIMER
 
-#define TIME_DEBUG 1
+#define TIME_DEBUG 0
 
 /*
  * 5 timers max per task
@@ -22,11 +23,13 @@
 
 uint32_t timer_mutex = 1;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
+    timer_t  id;            /* Timer identifier (uint64_t, same as timer key used for sorted list usage.
+                               MUST be aligned on 8 bytes to avoid strd usage fault (compiler bug) */
+    uint32_t duration_ms;   /* duration in ms */
     sigev_notify_function_t sigev_notify_function;
     __sigval_t sigev_value;
     int      sigev_notify;  /* notify mode */
-    timer_t  id;            /* Timer identifier (uint64_t, same as timer key used for sorted list usage */
     bool     set;           /* is timer active (timer_settime() has been executed at least once with
                                non-null it_value content */
     bool postponed;         /* timer has been postponed by another timer_settime(). A new node has been created.
@@ -72,10 +75,11 @@ static int timer_create_node(struct sigevent *sevp, timer_t key, bool periodic)
     info->sigev_notify_function = sevp->sigev_notify_function;
     info->sigev_value = sevp->sigev_value;
     info->sigev_notify = sevp->sigev_notify;
-    info->id = key;
+    memcpy(&info->id, &key, sizeof(uint64_t));
     info->set = false;
     info->postponed = false;
     info->periodic = periodic;
+    info->duration_ms = 0;
 
 #if TIME_DEBUG
     printf("creating timer with id:\n");
@@ -126,13 +130,9 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
     /* foreach node, get back its id....
      * As we have locked the timer lock, we can read the list manualy here */
 
-#if TIME_DEBUG
-    printf("searching timer with id:\n");
-    hexdump((uint8_t*)&id, 8);
-#endif
     /*calculating new key */
     uint64_t key;
-    ret = sys_get_systick(&key, PREC_MILLI);
+    ret = sys_get_systick(&key, PREC_MICRO);
     if (ret != SYS_E_DONE) {
         /* calling task must be allowed to measure cycle-level timestamping */
         errcode = -1;
@@ -146,12 +146,16 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
     } else {
         period_ms = (ts->tv_nsec / 1000000);
     }
-    key += period_ms;
+    /* key is in us to avoid collision */
+    key += (period_ms*1000);
 
-
+#if TIME_DEBUG
+    printf("searching timer with id in unset list:\n");
+    hexdump((uint8_t*)&id, 8);
+#endif
     /* searching for node.... */
     while (node != NULL) {
-        if (((timer_infos_t*)node->data)->id == id) {
+        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
             break;
         }
         node = node->next;
@@ -171,6 +175,8 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
 
     /* update node infos */
     info->set = true;
+    info->duration_ms = period_ms;
+
     if (interval == true) {
         info->periodic = true;
     }
@@ -186,15 +192,17 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
     goto call_alarm;
 
 timer_set:
+    printf("... not found. searching in set list.\n");
     node = timer_list.head;
     while (node != NULL) {
-        if (((timer_infos_t*)node->data)->id == id) {
+        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
             break;
         }
         node = node->next;
     }
     if (node == NULL) {
         /* not in timer_list neither... not found then*/
+        printf("not found!\n");
         errcode = -1;
         __libstd_set_errno(ENOENT);
         goto err;
@@ -206,7 +214,7 @@ timer_set:
      * mark them as 'postponed'. */
     info->postponed = true;
     while (node != NULL) {
-        if (((timer_infos_t*)node->data)->id == id) {
+        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
             /* old timer configs, even if triggered by kernel, will
              * not execute upper hanlder, neither generate a new
              * timer period */
@@ -228,7 +236,7 @@ timer_set:
     new_info->sigev_notify_function = info->sigev_notify_function;
     new_info->sigev_value = info->sigev_value;
     new_info->sigev_notify = info->sigev_notify;
-    new_info->id = info->id;
+    memcpy(&new_info->id, &info->id, sizeof(uint64_t));
     new_info->set = true;
     new_info->postponed = false;
     if (interval == true) {
@@ -272,6 +280,7 @@ err:
 /* timer handler that is effectively called by the kernel */
 void timer_handler(uint32_t ms)
 {
+    uint64_t key;
     mbed_error_t errcode;
     ms = ms;
     int ret;
@@ -290,7 +299,6 @@ void timer_handler(uint32_t ms)
     /*@ assert \valid(timer_list->head); */
     timer_infos_t *info = NULL;
 
-#if 0
     if (dangling_timers > 0) {
         /* one or more previously executed list accesses were locked by another thread.
          * This prevent the handler from properly accessing & removing the timer node.
@@ -307,25 +315,13 @@ void timer_handler(uint32_t ms)
         /*@ assert dangling_timers == 0; */
         /* All dangling removed */
     }
-#endif
-    /* As some unset timer may be ordered first, go to first **set** timer */
-    while (node) {
-        info = node->data;
-        if (info->set == true) {
-            break;
-        } else {
-            node = node->next;
-        }
-    }
-    if (node == NULL) {
-        goto err;
-    }
     /* when coming back from the kernel, we don't have the timer key with us. To be sure to get
      * back the correct timer node, the ordered list of timer is using a timer timeout timestamp based
      * key to ensure an ordered listing.
      * As a consequence, when the handler is called, the terminated timer is **always** the first node of the list.
      */
-    uint64_t key = node->key;
+    memcpy(&key, &node->key, sizeof(uint64_t));
+
     errcode = list_remove(&timer_list, (void**)&info, key);
     switch (errcode) {
         case MBED_ERROR_INVPARAM:
@@ -364,11 +360,11 @@ void timer_handler(uint32_t ms)
                 sevp.sigev_notify = info->sigev_notify;
                 sevp.sigev_value = info->sigev_value;
                 struct timespec ts = { 0 };
-                if (ms < 4000) {
-                    ts.tv_nsec = ms*1000000;
+                if (info->duration_ms < 1000) {
+                    ts.tv_nsec = info->duration_ms*1000000;
                     ts.tv_sec = 0;
                 } else {
-                    ts.tv_sec = ms / 1000;
+                    ts.tv_sec = info->duration_ms / 1000;
                     ts.tv_nsec = 0;
                 }
                 if ((ret = timer_create_node(&sevp, key, true)) == -1) {
@@ -380,7 +376,6 @@ void timer_handler(uint32_t ms)
                     goto err;
                 }
             }
-
         }
     }
     wfree((void**)&info);
