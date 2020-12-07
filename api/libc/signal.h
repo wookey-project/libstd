@@ -47,18 +47,18 @@ union sigval
   int sival_int;
   void *sival_ptr;
 };
-
 typedef union sigval __sigval_t;
 
+typedef void (*sigev_notify_function_t)(__sigval_t sig);
 
 /*
  * Simplified, yet POSIX sigevent_t. No support for pid_t
  */
 typedef struct sigevent {
+    sigev_notify_function_t sigev_notify_function;
     __sigval_t sigev_value;
     int sigev_signo;
     int sigev_notify;
-    void (*sigev_notify_function)(__sigval_t);
 } sigevent_t;
 
 

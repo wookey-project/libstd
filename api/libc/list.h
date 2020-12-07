@@ -30,11 +30,11 @@
 
 #define MAX_LIST_DEPTH 512
 
-struct list_node {
+struct  __attribute__((packed)) list_node {
+    uint64_t key;
 	struct list_node *next;
 	struct list_node *prev;
 	void   *data;
-    uint64_t key;
 };
 
 

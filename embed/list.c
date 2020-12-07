@@ -1,7 +1,11 @@
 #include "libc/types.h"
 #include "libc/list.h"
 #include "libc/stdio.h"
+#include "libc/nostd.h"
 #include "libc/semaphore.h"
+
+
+#define LIST_DEBUG 1
 
 /* FIXME: get_current_ctx_id() should not be there */
 #include "arch/cores/armv7-m/m4_syscall.h"
@@ -44,7 +48,7 @@ err:
 mbed_error_t list_insert(list_t *l, void *data, uint64_t key)
 {
     mbed_error_t errcode = MBED_ERROR_NONE;
-    struct list_node *n;
+    struct list_node *n = NULL;
     int     ret;
 
     if (!l || !data) {
@@ -62,6 +66,11 @@ mbed_error_t list_insert(list_t *l, void *data, uint64_t key)
         errcode = MBED_ERROR_NOMEM;
         goto err;
     }
+    if (n == NULL) {
+        /* should not happen */
+        errcode = MBED_ERROR_NOMEM;
+        goto err;
+    }
 
     /* We manipulate the queue: we need to lock it to stay thread-safe */
     if (get_current_ctx_id() == CTX_ISR) {
@@ -75,6 +84,11 @@ mbed_error_t list_insert(list_t *l, void *data, uint64_t key)
     n->data = data;
     n->key = key;
 
+#if LIST_DEBUG
+    printf("[list] insert data with key:\n");
+    hexdump((uint8_t*)&key, 8);
+#endif
+
     struct list_node *node = l->head;
     /* empty list ? */
     if (node == NULL) {
@@ -85,29 +99,36 @@ mbed_error_t list_insert(list_t *l, void *data, uint64_t key)
     }
 
     /* or find the correct position */
-    while (node && node->key <= key && node->next) {
-        node = node->next;
+    while (node->key <= key) {
+        if (node->next != NULL) {
+            node = node->next;
+        } else {
+            break;
+        }
     }
     if (node->key <= key) {
-        /* current node has the bigger key */
+        /* current node has the bigger key, place it after node */
+        n->next = node->next;
         node->next = n;
-        n->next = NULL;
         n->prev = node;
+        if (n->next != NULL) {
+            n->next->prev = n;
+        }
     } else {
+        /* place it before node */
         n->next = node;
-        if (node->prev == NULL) {
+        n->prev = node->prev;
+        node->prev = n;
+        if (n->prev == NULL) {
             /* set node before first */
             l->head = n;
-            n->prev = NULL;
         } else {
-            n->prev = node->prev;
             n->prev->next = n;
         }
-        node->prev = n;
     }
-    l->size++;
 
 err_lock:
+    l->size++;
     mutex_unlock(&l->lock);
 err:
     return errcode;
@@ -124,7 +145,7 @@ mbed_error_t list_remove(list_t *l, void **data, uint64_t key)
         errcode = MBED_ERROR_INVPARAM;
         goto err;
     }
-    if (l->head == NULL) {
+    if (l->head == NULL || l->size == 0) {
         errcode = MBED_ERROR_NOSTORAGE;
         goto err;
     }
@@ -138,6 +159,11 @@ mbed_error_t list_remove(list_t *l, void **data, uint64_t key)
         mutex_lock(&l->lock);
     }
 
+#if LIST_DEBUG
+    printf("[list] removing node with key:\n");
+    hexdump((uint8_t*)&key, 8);
+#endif
+
     n = l->head;
     /* or find the correct position */
     while (n && n->key != key && n->next) {
@@ -148,6 +174,9 @@ mbed_error_t list_remove(list_t *l, void **data, uint64_t key)
         goto err_lock;
     }
     /* We have found the node ! */
+#if LIST_DEBUG
+    printf("[list] node to remove found!\n");
+#endif
 
     /*get back data and remove the node */
     *data = n->data;
@@ -160,7 +189,7 @@ mbed_error_t list_remove(list_t *l, void **data, uint64_t key)
     if (wfree((void **) &n) != 0) {
 #if LIST_DEBUG
         /* this error should not happend. */
-        printf("free failed with %x\n", ret);
+        printf("free failed !");
 #endif
     }
     l->size--;

@@ -784,10 +784,12 @@ int printf(const char *fmt, ...)
     va_list args;
     size_t  len;
 
+#if 0
     /* locking the ring buffer, waiting if needed */
     if (!mutex_trylock(&rb_lock)) {
         goto err_init;
     }
+#endif
     /*
      * if there is some asyncrhonous printf to pass to the kernel, do it
      * before execute the current printf command
@@ -803,9 +805,11 @@ int printf(const char *fmt, ...)
 
     print_and_reset_buffer();
  err:
+#if 0
     /* unlocking the ring buffer */
     mutex_unlock(&rb_lock);
 err_init:
+#endif
     return res;
 }
 
