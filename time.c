@@ -17,13 +17,13 @@
 #define TIME_DEBUG 0
 
 /*
- * 5 timers max per task
+ * 5 timers max per task. By now EwoK only handle one timer at a time... :-/
  */
-#define STD_POSIX_TIMER_MAXNUM 5
+#define STD_POSIX_TIMER_MAXNUM 1
 
 uint32_t timer_mutex = 1;
 
-typedef struct __attribute__((packed)) {
+typedef struct {
     timer_t  id;            /* Timer identifier (uint64_t, same as timer key used for sorted list usage.
                                MUST be aligned on 8 bytes to avoid strd usage fault (compiler bug) */
     uint32_t duration_ms;   /* duration in ms */
@@ -75,7 +75,8 @@ static int timer_create_node(struct sigevent *sevp, timer_t key, bool periodic)
     info->sigev_notify_function = sevp->sigev_notify_function;
     info->sigev_value = sevp->sigev_value;
     info->sigev_notify = sevp->sigev_notify;
-    memcpy(&info->id, &key, sizeof(uint64_t));
+    info->id = key;
+    //memcpy(&info->id, &key, sizeof(uint64_t));
     info->set = false;
     info->postponed = false;
     info->periodic = periodic;
@@ -155,7 +156,8 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
 #endif
     /* searching for node.... */
     while (node != NULL) {
-        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        //if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        if (((timer_infos_t*)node->data)->id == id) {
             break;
         }
         node = node->next;
@@ -189,22 +191,28 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
         goto err;
     }
     /* finished, we can call kernel alarm */
+    if (info->sigev_notify != SIGEV_THREAD) {
+        /* no thread to notify */
+        goto err;
+    }
     goto call_alarm;
 
 timer_set:
+#if TIME_DEBUG
     printf("... not found. searching in set list.\n");
+#endif
     node = timer_list.head;
     while (node != NULL) {
-        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        //if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        if (((timer_infos_t*)node->data)->id == id) {
             break;
         }
         node = node->next;
     }
     if (node == NULL) {
         /* not in timer_list neither... not found then*/
-        printf("not found!\n");
         errcode = -1;
-        __libstd_set_errno(ENOENT);
+        __libstd_set_errno(EINVAL);
         goto err;
     }
     info = (timer_infos_t*)node->data;
@@ -214,7 +222,8 @@ timer_set:
      * mark them as 'postponed'. */
     info->postponed = true;
     while (node != NULL) {
-        if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        //if (memcmp(&((timer_infos_t*)node->data)->id, &id, sizeof(uint64_t)) == 0) {
+        if (((timer_infos_t*)node->data)->id == id) {
             /* old timer configs, even if triggered by kernel, will
              * not execute upper hanlder, neither generate a new
              * timer period */
@@ -236,7 +245,8 @@ timer_set:
     new_info->sigev_notify_function = info->sigev_notify_function;
     new_info->sigev_value = info->sigev_value;
     new_info->sigev_notify = info->sigev_notify;
-    memcpy(&new_info->id, &info->id, sizeof(uint64_t));
+    new_info->id = info->id;
+    //memcpy(&new_info->id, &info->id, sizeof(uint64_t));
     new_info->set = true;
     new_info->postponed = false;
     if (interval == true) {
@@ -244,13 +254,16 @@ timer_set:
     }
     /* insert the new node with the new key */
     if ((ret = list_insert(&timer_list, new_info, key)) != MBED_ERROR_NONE) {
-        wfree((void**)&info);
+        wfree((void**)&new_info);
         errcode = -1;
         __libstd_set_errno(ENOMEM);
         goto err;
     }
     /* finished, we can call kernel alarm */
-    goto call_alarm;
+    if (new_info->sigev_notify != SIGEV_THREAD) {
+        /* no thread to notify */
+        goto err;
+    }
 
 call_alarm:
     /* call sigalarm() */
@@ -320,7 +333,8 @@ void timer_handler(uint32_t ms)
      * key to ensure an ordered listing.
      * As a consequence, when the handler is called, the terminated timer is **always** the first node of the list.
      */
-    memcpy(&key, &node->key, sizeof(uint64_t));
+    //memcpy(&key, &node->key, sizeof(uint64_t));
+    key = node->key;
 
     errcode = list_remove(&timer_list, (void**)&info, key);
     switch (errcode) {
@@ -492,17 +506,16 @@ err:
  *
  * The alarm request is sent to the kernel.
  */
-int timer_settime(timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec *old_value __attribute__((unused)))
+int timer_settime(timer_t timerid, int flags __attribute__((unused)), const struct itimerspec *new_value, struct itimerspec *old_value __attribute__((unused)))
 {
     int errcode = 0;
-    flags = flags;
     const struct timespec *ts;
     bool interval = false;
 
     /* Sanitize first. old_value is allowed to be NULL */
     if (new_value == NULL) {
         errcode = -1;
-        __libstd_set_errno(EINVAL);
+        __libstd_set_errno(EFAULT);
         goto err;
     }
     /* select type of setting (value or interval) */
@@ -544,11 +557,113 @@ err:
     return errcode;
 }
 
-#if 0
 int timer_gettime(timer_t timerid, struct itimerspec *curr_value)
 {
-    return 0;
+    uint64_t timer_us;
+    uint64_t now_us;
+    uint64_t eta_us;
+    int errcode = 0;
+    timer_infos_t *info = NULL;
+    struct list_node *node = NULL;
+    uint8_t ret;
+    /* Sanitize first */
+    if (curr_value == NULL) {
+        errcode = -1;
+        __libstd_set_errno(EFAULT);
+        goto err;
+    }
+
+    if (get_current_ctx_id() == CTX_ISR) {
+        /* ISR thread: trying nonblocking lock... */
+        if (mutex_trylock(&timer_mutex) == false) {
+            /* didn't manage to get mutex lock without blocking (another thread is blocking it ?) */
+            errcode = -1;
+            __libstd_set_errno(EAGAIN);
+            goto err;
+        }
+    } else {
+        mutex_lock(&timer_mutex);
+    }
+
+    if (timer_list.size == 0) {
+        /* no timer set */
+        errcode = -1;
+        __libstd_set_errno(EINVAL);
+        goto err;
+    }
+
+    node = timer_list.head;
+    /*@ assert \valid(node);*/
+
+    /* searching no set timers first */
+    while (node != NULL) {
+        info = node->data;
+        //if (memcmp(&info->id, &timerid, sizeof(uint64_t)) == 0) {
+        if (info->id == timerid) {
+            if (&info->postponed == false) {
+                break;
+            }
+        }
+        node = node->next;
+    }
+    if (node == NULL) {
+        /* timer not found. Is timer unset ? */
+        node = unset_timer_list.head;
+        while (node != NULL) {
+            info = node->data;
+        //    if (memcmp(&info->id, &timerid, sizeof(uint64_t)) == 0) {
+            if (info->id == timerid) {
+                break;
+            }
+            node = node->next;
+        }
+        if (node == NULL) {
+
+            errcode = -1;
+            __libstd_set_errno(EINVAL);
+            goto err_lock;
+        }
+    }
+
+    /*@ assert \valid(node); */
+    /*@ assert \valid(info); */
+    timer_us = info->id;
+
+    if (info->set == false) {
+        /* unset timer */
+        curr_value->it_value.tv_sec = 0;
+        curr_value->it_value.tv_nsec = 0;
+        goto err_lock;
+    }
+
+    eta_us = (timer_us + (info->duration_ms*1000)) - now_us;
+    /* timer id is the time (in us) when the timer has been set */
+    //memcpy(&timer_us, &info->id, sizeof(uint64_t));
+    timer_us = info->id;
+    ret = sys_get_systick(&now_us, PREC_MICRO);
+    if (ret != SYS_E_DONE) {
+        /* calling task must be allowed to measure cycle-level timestamping */
+        errcode = -1;
+        __libstd_set_errno(EPERM);
+        goto err;
+    }
+    if (info->periodic == true) {
+        if (info->duration_ms < 4000) {
+            curr_value->it_interval.tv_nsec = info->duration_ms * 1000 * 1000;
+        } else {
+            curr_value->it_interval.tv_sec = info->duration_ms / 1000;
+        }
+    }
+    if (eta_us > 4000000) {
+        curr_value->it_value.tv_sec = eta_us / 1000000;
+    } else {
+        curr_value->it_value.tv_nsec = eta_us * 1000;
+    }
+
+err_lock:
+    mutex_unlock(&timer_mutex);
+err:
+    return errcode;
 }
-#endif
 
 #endif
