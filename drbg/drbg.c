@@ -1,4 +1,5 @@
 #include "drbg/drbg.h"
+#include "libc/string.h"
 
 #ifdef CONFIG_STD_DRBG
 
@@ -64,7 +65,7 @@ drbg_error drbg_instantiate(drbg_ctx *ctx, uint32_t requested_instantiation_secu
 	uint32_t data_len;
 	unsigned char *Nonce;
 	uint32_t NonceLen;
-	
+
 
 	if(drbg_init(ctx)){
 		ret = DRBG_NON_INIT;
@@ -94,12 +95,12 @@ drbg_error drbg_instantiate(drbg_ctx *ctx, uint32_t requested_instantiation_secu
 	if(backend_drbg_instantiate(&(ctx->drbg_ctx), data, data_len, Nonce, NonceLen, personalization_string, personalization_string_len) != BACKEND_DRBG_OK){
 		ret = DRBG_BACKEND_ERROR;
 		goto err;
-	} 
+	}
 
 	return DRBG_OK;
 err:
 	/* Cleanup local entropy pool in all cases */
-	local_memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));	
+	memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));
 	return ret;
 }
 
@@ -135,7 +136,7 @@ drbg_error drbg_reseed(drbg_ctx *ctx, const unsigned char *addin, uint32_t addin
 	return DRBG_OK;
 err:
 	/* Cleanup local entropy pool in all cases */
-	local_memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));	
+	memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));
 	return ret;
 }
 
@@ -182,7 +183,7 @@ drbg_error drbg_uninstantiate(drbg_ctx *ctx)
 		goto err;
 	}
 	/* Cleanup our local entropy pool */
-	local_memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));
+	memset(ctx->entropy_pool, 0, sizeof(ctx->entropy_pool));
 	if(backend_drbg_uninstantiate(&(ctx->drbg_ctx)) != BACKEND_DRBG_OK){
 		ret = DRBG_BACKEND_ERROR;
 		goto err;
