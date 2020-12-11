@@ -28,9 +28,9 @@ typedef struct {
                                MUST be aligned on 8 bytes to avoid strd usage fault (compiler bug) */
     uint32_t duration_ms;   /* duration in ms */
     sigev_notify_function_t sigev_notify_function;
-    __sigval_t sigev_value;
-    int      sigev_notify;  /* notify mode */
-    bool     set;           /* is timer active (timer_settime() has been executed at least once with
+    __sigval_t              sigev_value;
+    int                     sigev_notify;  /* notify mode */
+    bool                    set;  /* is timer active (timer_settime() has been executed at least once with
                                non-null it_value content */
     bool postponed;         /* timer has been postponed by another timer_settime(). A new node has been created.
                                for this node, the timer_handler() should not call the notify function. */
@@ -121,7 +121,7 @@ err:
  * SetTime case: Set a node in a list (newly set or already set) and
  * handle alarm backend.
  */
-int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
+int timer_setnode(timer_t id, const struct timespec *ts, bool interval, struct itimerspec *old)
 {
     int errcode = 0;
     uint8_t ret;
@@ -142,11 +142,8 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
     }
     /* key is in milisecond */
     uint32_t period_ms = 0;
-    if (ts->tv_sec != 0) {
-        period_ms = (ts->tv_sec * 1000);
-    } else {
-        period_ms = (ts->tv_nsec / 1000000);
-    }
+    period_ms = (ts->tv_sec * 1000);
+    period_ms += (ts->tv_nsec / 1000000);
     /* key is in us to avoid collision */
     key += (period_ms*1000);
 
@@ -167,6 +164,13 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval)
         goto timer_set;
     }
 
+    /* for unset timers, if old, exists, set it with zeros */
+    if (old) {
+        old->it_value.tv_sec = 0;
+        old->it_value.tv_nsec = 0;
+        old->it_interval.tv_sec = 0;
+        old->it_interval.tv_nsec = 0;
+    }
 
     /* simple case: timer is not yet set, update, and re-insert with alarm launched */
     /*@ assert \valid(node); */
@@ -216,6 +220,21 @@ timer_set:
         goto err;
     }
     info = (timer_infos_t*)node->data;
+
+    /* when timer already set and 'old' is non-null, set the previously
+     * configured values to it */
+    if (old) {
+        info->it_value.tv_sec = info->duration_ms / 1000;
+        old->it_value.tv_nsec = (info->duration_ms  % 1000) * 1000000;
+        if (info->periodic == false) {
+            old->it_interval.tv_sec = 0;
+            old->it_interval.tv_nsec = 0;
+        } else {
+            old->it_interval.tv_sec = info->duration_ms / 1000;
+            old->it_interval.tv_nsec = (info->duration_ms  % 1000) * 1000000;
+        }
+    }
+
 
     /* 3. the node is already set*/
     /* for all nodes having the same id (including that one),
@@ -374,13 +393,10 @@ void timer_handler(uint32_t ms)
                 sevp.sigev_notify = info->sigev_notify;
                 sevp.sigev_value = info->sigev_value;
                 struct timespec ts = { 0 };
-                if (info->duration_ms < 1000) {
-                    ts.tv_nsec = info->duration_ms*1000000;
-                    ts.tv_sec = 0;
-                } else {
-                    ts.tv_sec = info->duration_ms / 1000;
-                    ts.tv_nsec = 0;
-                }
+
+                ts.tv_nsec = (info->duration_ms % 1000) * 1000000;
+                ts.tv_sec = info->duration_ms / 1000;
+
                 if ((ret = timer_create_node(&sevp, key, true)) == -1) {
                     printf("[handler] failed to rearm timer (creation)\n");
                     goto err;
@@ -401,7 +417,7 @@ err_nolock:
 
 
 /**************************************************************************
- * Exported functions
+ * Exported functions part 1; timers
  */
 
 
@@ -530,7 +546,7 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
         __libstd_set_errno(EINVAL);
         goto err;
     }
-    if (ts->tv_nsec != 0 && ts->tv_nsec < 1000000) {
+    if (ts->tv_sec == 0 && ts->tv_nsec < 1000000) {
         /* to short timer */
         errcode = -1;
         __libstd_set_errno(EINVAL);
@@ -550,7 +566,7 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
     }
 
 
-    errcode = timer_setnode(timerid, ts, interval);
+    errcode = timer_setnode(timerid, ts, interval, old_value);
 
     mutex_unlock(&timer_mutex);
 err:
@@ -648,22 +664,72 @@ int timer_gettime(timer_t timerid, struct itimerspec *curr_value)
         goto err;
     }
     if (info->periodic == true) {
-        if (info->duration_ms < 4000) {
-            curr_value->it_interval.tv_nsec = info->duration_ms * 1000 * 1000;
-        } else {
+            curr_value->it_interval.tv_nsec = (info->duration_ms % 1000) * 1000000;
             curr_value->it_interval.tv_sec = info->duration_ms / 1000;
-        }
     }
-    if (eta_us > 4000000) {
-        curr_value->it_value.tv_sec = eta_us / 1000000;
-    } else {
-        curr_value->it_value.tv_nsec = eta_us * 1000;
-    }
+    curr_value->it_value.tv_nsec = (eta_us % 1000000) * 1000;
+    curr_value->it_value.tv_sec = eta_us / 1000000;
 
 err_lock:
     mutex_unlock(&timer_mutex);
 err:
     return errcode;
 }
+
+/**************************************************************************
+ * Exported functions part 1; clock
+ */
+
+#if 0
+/* TODO or not TODO, that is the question... */
+int clock_getres(clockid_t clockid, struct timespec *res)
+{
+    /* On Ework the precision of timers is in ms, depending on the
+     * CONFIG_SCHED_PERIOD value for inccuracy. Usual scheduling period
+     * is about 10 ms but can be more or less.
+     */
+}
+#endif
+
+int clock_gettime(clockid_t clockid, struct timespec *tp)
+{
+    int errcode = 0;
+    uint64_t time;
+    /* sanitation */
+    if (tp == NULL) {
+        errcode = -1;
+        __libstd_set_errno(EINVAL);
+        goto err;
+    }
+    /* by now, no support for RTC clock. For boards with RTC clocks, add a config
+     * option to allow CLOCK_REALTIME */
+    if (clockid != CLOCK_MONOTONIC) {
+        errcode = -1;
+        __libstd_set_errno(EINVAL);
+        goto err;
+    }
+
+    /* as we can't check the level of permission we have (depend on the task),
+     * we first try the most precise measurement, and continue upto the less
+     * precise one.
+     * The first valid measurement makes the function returns */
+    if (sys_get_systick(&time, PREC_MICRO) == SYS_E_DONE) {
+        tp->tv_nsec = (time % 1000000) * 1000;
+        tp->tv_sec = (time / 1000000);
+        goto err;
+    }
+    if (sys_get_systick(&time, PREC_MILLI) == SYS_E_DONE) {
+        tp->tv_nsec = (time % 1000) * 1000000;
+        tp->tv_sec = (time / 1000);
+        goto err;
+    }
+
+    /* EPERM is not a POSIX defined return value, but time measurement is controled on EwoK */
+    errcode = -1;
+    __libstd_set_errno(EPERM);
+err:
+    return errcode;
+}
+
 
 #endif
