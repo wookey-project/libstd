@@ -224,7 +224,7 @@ timer_set:
     /* when timer already set and 'old' is non-null, set the previously
      * configured values to it */
     if (old) {
-        info->it_value.tv_sec = info->duration_ms / 1000;
+        old->it_value.tv_sec = info->duration_ms / 1000;
         old->it_value.tv_nsec = (info->duration_ms  % 1000) * 1000000;
         if (info->periodic == false) {
             old->it_interval.tv_sec = 0;
@@ -401,7 +401,7 @@ void timer_handler(uint32_t ms)
                     printf("[handler] failed to rearm timer (creation)\n");
                     goto err;
                 }
-                if ((ret = timer_setnode(key, &ts, true)) == -1) {
+                if ((ret = timer_setnode(key, &ts, true, NULL)) == -1) {
                     printf("[handler] failed to rearm timer (set)\n");
                     goto err;
                 }
