@@ -3,10 +3,6 @@
 #include "libc/types.h"
 
 
-typedef void (*zeroify_p)(void);
-
-
-
 /*
  * Let's define services zeroficication prototypes
  */
@@ -17,22 +13,11 @@ void msg_zeroify(void);
 void init_ring_buffer(void);
 
 /*
- * The zeroification vector definition
- */
-static const zeroify_p glob_array[] = {
-#if CONFIG_STD_SYSV_MSQ
-    msg_zeroify,
-#endif
-    NULL
-};
-
-/*
  * The zeroification handler at boot time
  */
-__IN_SEC_VDSO void zeroify_libc_globals(void) {
-    uint8_t i = 0;
-    while (glob_array[i] != NULL) {
-        glob_array[i]();
-        i++;
-    }
+void zeroify_libc_globals(void) {
+    init_ring_buffer();
+#if CONFIG_STD_SYSV_MSQ
+    msg_zeroify();
+#endif
 }
