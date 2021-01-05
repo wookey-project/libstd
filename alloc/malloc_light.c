@@ -75,7 +75,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     int32_t random = 0;
 
     /* Errno is initialized to zero */
-    malloc_errno = 0;
+    set_malloc_errno(0);
 
     if (!is_malloc_initialized()) {
         return -1;
@@ -85,7 +85,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Trying to lock of wmalloc usage */
     if (!semaphore_trylock(&_ptr_semaphore)) {
-        malloc_errno = EHEAPLOCKED;
+        set_malloc_errno(EHEAPLOCKED);
         return -1;
     }
 #endif
@@ -95,13 +95,13 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     /* Checking of the validity of the flag */
     if ((flag != ALLOC_NORMAL) && (flag != ALLOC_SENSITIVE)) {
-        malloc_errno = EHEAPFLAGNOTVALID;
+        set_malloc_errno(EHEAPFLAGNOTVALID);
         goto end_error;
     }
 
     /* We check if there is free block into heap */
     if (!NB_FREE()) {
-        malloc_errno = EHEAPFULL;
+        set_malloc_errno(EHEAPFULL);
         goto end_error;
     }
 
@@ -156,7 +156,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                 insered_block = 1;
             } else {
                 if (_unlink(b_cur) < 0) {
-                    malloc_errno = EHEAPNODEF;
+                    set_malloc_errno(EHEAPNODEF);
                     goto end_error;
                 }
                 DECREASE_NB_FREE();
@@ -189,7 +189,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #ifdef CONFIG_STD_MALLOC_MUTEX
             /* Unlocking of wmalloc usage */
             if (!semaphore_release(&_ptr_semaphore)) {
-                malloc_errno = EHEAPSEMAPHORE;
+                set_malloc_errno(EHEAPSEMAPHORE);
                 return -1;
             }
 #endif
@@ -209,7 +209,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
         /* If the last free block is reached without finding convenient one, we return -1 */
         if (random >= (int32_t) NB_FREE()) {
-            malloc_errno = EHEAPNOMEM;
+            set_malloc_errno(EHEAPNOMEM);
             goto end_error;
         }
     }
@@ -279,7 +279,7 @@ int wfree(void **ptr_to_free)
     uint8_t merged      = 0;
 
     /* Errno is initialized to zero */
-    malloc_errno = 0;
+    set_malloc_errno(0);
 
     if (!is_malloc_initialized()) {
         return -1;
@@ -290,7 +290,7 @@ int wfree(void **ptr_to_free)
 
     /* Locking of wmalloc usage */
     if (!semaphore_trylock(&_ptr_semaphore)) {
-        malloc_errno = EHEAPLOCKED;
+        set_malloc_errno(EHEAPLOCKED);
         return -1;
     }
 #endif
@@ -300,14 +300,14 @@ int wfree(void **ptr_to_free)
 
     /* We check if the pointer is not null */
     if (!(*ptr_to_free)) {
-        malloc_errno = EHEAPALREADYFREE;
+        set_malloc_errno(EHEAPALREADYFREE);
         goto end_error;
     }
 
     /* We check if the pointer is not out of range */
     if (((struct alloc_block *) (*ptr_to_free) < (struct alloc_block *) b_1 + 1) ||
         ((physaddr_t) (*ptr_to_free) > _end_heap)) {
-        malloc_errno = EHEAPOUTOFRANGE;
+        set_malloc_errno(EHEAPOUTOFRANGE);
         goto end_error;
     }
 
@@ -319,7 +319,7 @@ int wfree(void **ptr_to_free)
 
     /* We check if the block has not already been freed */
     if (IS_FREE(b_cur)) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 
@@ -409,7 +409,7 @@ int wfree(void **ptr_to_free)
     if (!merged) {
 
         if (_link(b_cur, b_0) < 0) {
-            malloc_errno = EHEAPNODEF;
+            set_malloc_errno(EHEAPNODEF);
             goto end_error;
         }
 
@@ -422,7 +422,7 @@ end:
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Unlocking of wmalloc usage */
     if (!semaphore_release(&_ptr_semaphore)) {
-        malloc_errno = EHEAPSEMAPHORE;
+        set_malloc_errno(EHEAPSEMAPHORE);
         return -1;
     }
 #endif

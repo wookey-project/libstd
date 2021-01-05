@@ -156,12 +156,12 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
     struct block *b_0 = NULL;
     struct block *b_1 = NULL;
 
-    malloc_errno = 0;
+    set_malloc_errno(0);
 
     /* Size validity is checked */
 #if CONFIG_STD_MALLOC_SIZE_LEN == 16
     if (heap_size_tmp > 65535) {
-        malloc_errno = EHEAPSIZETOOBIG;
+        set_malloc_errno(EHEAPSIZETOOBIG);
         return -1;
     }
 #endif
@@ -171,7 +171,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 #endif
 
     if (heap_size_tmp < 2 * HDR_FREE_SZ) {
-        malloc_errno = EHEAPSIZETOOSMALL;
+        set_malloc_errno(EHEAPSIZETOOSMALL);
         return -1;
     }
 
@@ -186,7 +186,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 
     /* Trying to lock of wmalloc usage */
     if (!semaphore_trylock(&_semaphore)) {
-        malloc_errno = EHEAPLOCKED;
+        set_malloc_errno(EHEAPLOCKED);
         return -1;
     }
 
@@ -232,7 +232,7 @@ static int _wmalloc_init(const physaddr_t task_start_heap, const uint32_t task_h
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Unlocking of wmalloc usage */
     if (!semaphore_release(&_semaphore)) {
-        malloc_errno = EHEAPSEMAPHORE;
+        set_malloc_errno(EHEAPSEMAPHORE);
         return -1;
     }
 #endif

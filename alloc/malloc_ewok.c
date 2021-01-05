@@ -1,5 +1,5 @@
 /* Author: Christophe GUNST (christop.gh@gmail.com)
- * 
+ *
  * (implementation of an allocator for the WooKey project)
  */
 
@@ -102,14 +102,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #endif
 
     /* Errno is initialized to zero */
-    malloc_errno = 0;
+    set_malloc_errno(0);
 
 #ifdef CONFIG_STD_MALLOC_MUTEX
     _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
 
     /* Trying to lock of wmalloc usage */
     if (!semaphore_trylock(&semaphore)) {
-        malloc_errno = EHEAPLOCKED;
+        set_malloc_errno(EHEAPLOCKED);
         return -1;
     }
 #endif
@@ -122,14 +122,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
     /* Checking of the validity of the flag */
     if ((flag != ALLOC_NORMAL) && (flag != ALLOC_SENSITIVE)) {
-        malloc_errno = EHEAPFLAGNOTVALID;
+        set_malloc_errno(EHEAPFLAGNOTVALID);
         goto end_error;
     }
 
 #if CONFIG_STD_MALLOC_CHECK_IF_NULL == 1
     /* We check if the pointer has not already been allocated */
     if (*ptr_to_alloc) {
-        malloc_errno = EHEAPALREADYALLOC;
+        set_malloc_errno(EHEAPALREADYALLOC);
         goto end_error;
     }
 #endif
@@ -137,7 +137,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #if CONFIG_STD_MALLOC_INTEGRITY >= 2
     /* Checking of the heap's integrity */
     if (_heap_integrity() < 0) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 #elif CONFIG_STD_MALLOC_BASIC_CHECKS == 1
@@ -147,14 +147,14 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #  elif CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
     if ((OFFSET(b_cur) > OFFSET_MAX)) {
 #  endif
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 #endif
 
     /* We check if there is free block into heap */
     if (!NB_FREE()) {
-        malloc_errno = EHEAPFULL;
+        set_malloc_errno(EHEAPFULL);
         goto end_error;
     }
 
@@ -175,7 +175,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
     /* We check if there is definitively not enough memory for block */
     memory_available = (u__sz_t) (SZ_FREE() - (u__sz_t)(HDR_FREE_SZ * (NB_FREE() - 1)));
     if (sz > memory_available) {
-        malloc_errno = EHEAPNOMEM;
+        set_malloc_errno(EHEAPNOMEM);
         goto end_error;
     }
 #endif
@@ -214,7 +214,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
                 /* We check the integrity of the header (if no heap integrity checking) */
                 if (check_hdr(b_cur, CHECK_ALL_FREE)) {
-                    malloc_errno = EHEAPINTEGRITY;
+                    set_malloc_errno(EHEAPINTEGRITY);
                     goto end_error;
                 }
 #endif
@@ -249,7 +249,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
                     insered_block = 1;
                 } else {
                     if (_unlink(b_cur) < 0) {
-                        malloc_errno = EHEAPNODEF;
+                        set_malloc_errno(EHEAPNODEF);
                         goto end_error;
                     }
                     DECREASE_NB_FREE();
@@ -294,7 +294,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 #ifdef CONFIG_STD_MALLOC_MUTEX
                 /* Unlocking of wmalloc usage */
                 if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
-                    malloc_errno = EHEAPSEMAPHORE;
+                    set_malloc_errno(EHEAPSEMAPHORE);
                     return -1;
                 }
 #endif
@@ -312,7 +312,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
             memory_available -= (u__sz_t)(b_cur->sz + b_cur_bis->sz - (u__sz_t) 2*HDR_FREE_SZ);
 # endif
             if (sz > memory_available) {
-                malloc_errno = EHEAPNOMEM;
+                set_malloc_errno(EHEAPNOMEM);
                 goto end_error;
             }
 #endif
@@ -329,12 +329,12 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 # if CONFIG_STD_MALLOC_INTEGRITY < 2
 #  if CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 0
         if (b_cur->nxt_free > OFFSET_MAX) {
-            malloc_errno = EHEAPINTEGRITY;
+            set_malloc_errno(EHEAPINTEGRITY);
             goto end_error;
         }
 #  elif CONFIG_STD_MALLOC_DBLE_WAY_SEARCH == 1
         if ((b_cur->nxt_free > OFFSET_MAX) || (b_cur_bis->prv_free > OFFSET_MAX)) {
-            malloc_errno = EHEAPINTEGRITY;
+            set_malloc_errno(EHEAPINTEGRITY);
             goto end_error;
         }
 #  endif
@@ -353,7 +353,7 @@ int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag)
 
         /* If the last free block is reached without finding convenient one, we return -1 */
         if (random >= (int32_t) NB_FREE()) {
-            malloc_errno = EHEAPNOMEM;
+            set_malloc_errno(EHEAPNOMEM);
             goto end_error;
         }
     }
@@ -437,14 +437,14 @@ int wfree(void **ptr_to_free)
     uint8_t merged      = 0;
 
     /* Errno is initialized to zero */
-    malloc_errno = 0;
+    set_malloc_errno(0);
 
 #ifdef CONFIG_STD_MALLOC_MUTEX
     _set_wmalloc_semaphore((uint32_t *) _ptr_semaphore);
 
     /* Locking of wmalloc usage */
     if (!semaphore_trylock(&semaphore)) {
-        malloc_errno = EHEAPLOCKED;
+        set_malloc_errno(EHEAPLOCKED);
         return -1;
     }
 #endif
@@ -457,14 +457,14 @@ int wfree(void **ptr_to_free)
 
     /* We check if the pointer is not null */
     if (!(*ptr_to_free)) {
-        malloc_errno = EHEAPALREADYFREE;
+        set_malloc_errno(EHEAPALREADYFREE);
         goto end_error;
     }
 
     /* We check if the pointer is not out of range */
     if (((struct alloc_block *) (*ptr_to_free) < (struct alloc_block *) b_1 + 1) ||
         ((physaddr_t) (*ptr_to_free) > _end_heap)) {
-        malloc_errno = EHEAPOUTOFRANGE;
+        set_malloc_errno(EHEAPOUTOFRANGE);
         goto end_error;
     }
 
@@ -476,20 +476,20 @@ int wfree(void **ptr_to_free)
 
     /* We check if the block has not already been freed */
     if (IS_FREE(b_cur)) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 
 #if CONFIG_STD_MALLOC_INTEGRITY >= 2
     /* Checking of the heap's integrity */
     if (_heap_integrity() < 0) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 #elif CONFIG_STD_MALLOC_INTEGRITY == 1
     /* We check the integrity of the header (if no heap integrity checking) */
     if (check_hdr(b_cur, CHECK_ALL_ALLOC)) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         goto end_error;
     }
 #endif
@@ -519,7 +519,7 @@ int wfree(void **ptr_to_free)
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
         /* We check the integrity of the header (if no heap integrity checking) */
         if (check_hdr(b_prv, CHECK_ALL_FREE)) {
-            malloc_errno = EHEAPINTEGRITY;
+            set_malloc_errno(EHEAPINTEGRITY);
             goto end_error;
         }
 #endif
@@ -552,7 +552,7 @@ int wfree(void **ptr_to_free)
 #if CONFIG_STD_MALLOC_INTEGRITY == 1
         /* We check the integrity of the header (if no heap integrity checking) */
         if (check_hdr(b_nxt, CHECK_ALL_FREE ^ CHECK_SZ_EQ_PRV)) {
-            malloc_errno = EHEAPINTEGRITY;
+            set_malloc_errno(EHEAPINTEGRITY);
             goto end_error;
         }
 #endif
@@ -613,7 +613,7 @@ int wfree(void **ptr_to_free)
     if (!merged) {
 
         if (_link(b_cur, b_0) < 0) {
-            malloc_errno = EHEAPNODEF;
+            set_malloc_errno(EHEAPNODEF);
             goto end_error;
         }
 
@@ -632,7 +632,7 @@ end:
 #ifdef CONFIG_STD_MALLOC_MUTEX
     /* Unlocking of wmalloc usage */
     if (!semaphore_release((uint32_t *) _ptr_semaphore)) {
-        malloc_errno = EHEAPSEMAPHORE;
+        set_malloc_errno(EHEAPSEMAPHORE);
         return -1;
     }
 #endif
@@ -663,7 +663,7 @@ static int _link(struct block *b_cur, struct block *b_0)
 #if CONFIG_STD_MALLOC_INTEGRITY == 0
 # if CONFIG_STD_MALLOC_BASIC_CHECKS >= 1
     if ((b_0->nxt_free > OFFSET_MAX) || (b_0->prv_free > OFFSET_MAX)) {
-        malloc_errno = EHEAPINTEGRITY;
+        set_malloc_errno(EHEAPINTEGRITY);
         return -1;
     }
 # endif

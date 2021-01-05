@@ -1,16 +1,20 @@
 #ifndef H_ERRNO
 #define H_ERRNO
 
-/* Author: Christophe GUNST (christop.gh@gmail.com)
- * 
- * (implementation of an allocator for the WooKey project)
- */
-
 #include "autoconf.h"
 
 #include "libc/types.h"
-uint32_t malloc_errno;
+#include "libc/sync.h"
 
+/* Author: Christophe GUNST (christop.gh@gmail.com)
+ *
+ * (implementation of an allocator for the WooKey project)
+ */
+
+uint32_t get_malloc_errno(void);
+#define malloc_errno (get_malloc_errno())
+
+void set_malloc_errno(uint32_t value);
 /* for EwoK */
 
 #define EHEAPNOMEM          140     /* Not enough space in heap */
