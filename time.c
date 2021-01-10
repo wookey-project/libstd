@@ -26,7 +26,7 @@ uint32_t timer_mutex = 1;
 typedef struct {
     timer_t  id;            /* Timer identifier (uint64_t, same as timer key used for sorted list usage.
                                MUST be aligned on 8 bytes to avoid strd usage fault (compiler bug) */
-    uint32_t duration_ms;   /* duration in ms */
+    uint32_t duration_ms;   /* duration in ms (at least for initial, it periodic) */
     sigev_notify_function_t sigev_notify_function;
     __sigval_t              sigev_value;
     int                     sigev_notify;  /* notify mode */
@@ -36,6 +36,7 @@ typedef struct {
                                for this node, the timer_handler() should not call the notify function. */
     bool periodic;          /* when setting a timer with it_interval, the timer is executed periodicaly until a new
                                timer_settime() reconfigure it. */
+    struct timespec         period; /* period (interval) specification, is periodic == true */
 } timer_infos_t;
 
 list_t timer_list;
@@ -121,7 +122,7 @@ err:
  * SetTime case: Set a node in a list (newly set or already set) and
  * handle alarm backend.
  */
-int timer_setnode(timer_t id, const struct timespec *ts, bool interval, struct itimerspec *old)
+int timer_setnode(timer_t id, const struct timespec *ts, bool interval, const struct timespec *interval_ts, struct itimerspec *old)
 {
     int errcode = 0;
     uint8_t ret;
@@ -164,6 +165,14 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval, struct i
         goto timer_set;
     }
 
+    /* handling unset timers */
+
+    if (period_ms == 0) {
+        /* unsetting a previously alread not set timer has no meaning... */
+        errcode = MBED_ERROR_INVPARAM;
+        goto err;
+    }
+
     /* for unset timers, if old, exists, set it with zeros */
     if (old) {
         old->it_value.tv_sec = 0;
@@ -185,6 +194,10 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval, struct i
 
     if (interval == true) {
         info->periodic = true;
+        if (interval_ts) {
+            info->period.tv_sec = interval_ts->tv_sec;
+            info->period.tv_nsec = interval_ts->tv_nsec;
+        }
     }
 
     /* and add it back with new key */
@@ -250,6 +263,11 @@ timer_set:
             ((timer_infos_t*)node->data)->periodic = false;
         }
         node = node->next;
+    }
+    if (period_ms == 0) {
+        /* we require to set a node with NULL value, meaning cleaning a timer. Previous instances has been
+         * postponed, we can leave now... */
+        goto err;
     }
     /* all previously set nodes are set as postponed. When
      * corresponding alarm will be triggered by the kernel,
@@ -355,6 +373,7 @@ void timer_handler(uint32_t ms)
     //memcpy(&key, &node->key, sizeof(uint64_t));
     key = node->key;
 
+    /* remove from activated timer list */
     errcode = list_remove(&timer_list, (void**)&info, key);
     switch (errcode) {
         case MBED_ERROR_INVPARAM:
@@ -386,12 +405,13 @@ void timer_handler(uint32_t ms)
             /* upper thread execution is requested. The callback **must** be set as it has been checked
              * at creation time. */
             info->sigev_notify_function(info->sigev_value);
+            struct sigevent sevp = { 0 };
+            sevp.sigev_notify_function = info->sigev_notify_function;
+            sevp.sigev_notify = info->sigev_notify;
+            sevp.sigev_value = info->sigev_value;
+
             if (info->periodic == true) {
                 /* reinsert a new timer, by creating a new one with the same key.... */
-                struct sigevent sevp = { 0 };
-                sevp.sigev_notify_function = info->sigev_notify_function;
-                sevp.sigev_notify = info->sigev_notify;
-                sevp.sigev_value = info->sigev_value;
                 struct timespec ts = { 0 };
 
                 ts.tv_nsec = (info->duration_ms % 1000) * 1000000;
@@ -401,10 +421,13 @@ void timer_handler(uint32_t ms)
                     printf("[handler] failed to rearm timer (creation)\n");
                     goto err;
                 }
-                if ((ret = timer_setnode(key, &ts, true, NULL)) == -1) {
+                if ((ret = timer_setnode(key, &ts, true, &info->period, NULL)) == -1) {
                     printf("[handler] failed to rearm timer (set)\n");
                     goto err;
                 }
+            } else {
+                /* not periodic, keep the timerid as created but not set for future timer_settime()  */
+                errcode = timer_create_node(&sevp, info->id, false);
             }
         }
     }
@@ -535,9 +558,15 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
         goto err;
     }
     /* select type of setting (value or interval) */
+    /*TODO: FIX1: if it_value fields are 0 -> unset timer */
     ts = &new_value->it_value;
     if (new_value->it_value.tv_sec == 0 && new_value->it_value.tv_nsec == 0) {
-        ts = &new_value->it_interval;
+        /* simply clean previously set timer */
+        errcode = timer_setnode(timerid, &new_value->it_value, false, &new_value->it_interval, old_value);
+        goto err;
+    }
+    if (new_value->it_interval.tv_sec != 0 || new_value->it_interval.tv_nsec != 0) {
+        /* an periodic interval is requested after first trigger (set by it_value)*/
         interval = true;
     }
     /* be sure that new_value ts is large enough */
@@ -566,7 +595,7 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
     }
 
 
-    errcode = timer_setnode(timerid, ts, interval, old_value);
+    errcode = timer_setnode(timerid, &new_value->it_value, interval, &new_value->it_interval, old_value);
 
     mutex_unlock(&timer_mutex);
 err:
