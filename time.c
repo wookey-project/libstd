@@ -619,6 +619,12 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
             __libstd_set_errno(EINVAL);
             goto err;
         }
+        if (ts->tv_nsec > 999999999) {
+            /* nsec bigger than 1 sec (POSIX compliance) */
+            errcode = -1;
+            __libstd_set_errno(EINVAL);
+            goto err;
+        }
         if (interval == true && new_value->it_interval.tv_sec == 0 && new_value->it_interval.tv_nsec < 1000000) {
             /* too short interval */
             errcode = -1;
