@@ -24,7 +24,7 @@
 uint32_t timer_mutex = 1;
 
 typedef struct {
-    timer_t  id;            /* Timer identifier (uint64_t, same as timer key used for sorted list usage.
+    timer_t  id;            /* Timer identifier (uint64_t), set at timer creation time. differ from 'key', upgraded with next timer trigger timetstamp
                                MUST be aligned on 8 bytes to avoid strd usage fault (compiler bug) */
     uint32_t duration_ms;   /* duration in ms (at least for initial, it periodic) */
     sigev_notify_function_t sigev_notify_function;
@@ -169,7 +169,8 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval, const st
 
     if (period_ms == 0) {
         /* unsetting a previously alread not set timer has no meaning... */
-        errcode = MBED_ERROR_INVPARAM;
+        errcode = -1;
+        __libstd_set_errno(EINVAL);
         goto err;
     }
 
@@ -228,6 +229,9 @@ timer_set:
     }
     if (node == NULL) {
         /* not in timer_list neither... not found then*/
+#if TIME_DEBUG
+        printf("timer not found in set timers\n");
+#endif
         errcode = -1;
         __libstd_set_errno(EINVAL);
         goto err;
@@ -243,8 +247,8 @@ timer_set:
             old->it_interval.tv_sec = 0;
             old->it_interval.tv_nsec = 0;
         } else {
-            old->it_interval.tv_sec = info->duration_ms / 1000;
-            old->it_interval.tv_nsec = (info->duration_ms  % 1000) * 1000000;
+            old->it_interval.tv_sec = info->period.tv_sec;
+            old->it_interval.tv_nsec = info->period.tv_nsec;
         }
     }
 
@@ -414,15 +418,19 @@ void timer_handler(uint32_t ms)
                 /* reinsert a new timer, by creating a new one with the same key.... */
                 struct timespec ts = { 0 };
 
-                ts.tv_nsec = (info->duration_ms % 1000) * 1000000;
-                ts.tv_sec = info->duration_ms / 1000;
+                ts.tv_nsec = info->period.tv_nsec;
+                ts.tv_sec = info->period.tv_sec;
 
-                if ((ret = timer_create_node(&sevp, key, true)) == -1) {
+                if ((ret = timer_create_node(&sevp, info->id, true)) == -1) {
+#if TIME_DEBUG
                     printf("[handler] failed to rearm timer (creation)\n");
+#endif
                     goto err;
                 }
-                if ((ret = timer_setnode(key, &ts, true, &info->period, NULL)) == -1) {
+                if ((ret = timer_setnode(info->id, &ts, true, &info->period, NULL)) == -1) {
+#if TIME_DEBUG
                     printf("[handler] failed to rearm timer (set)\n");
+#endif
                     goto err;
                 }
             } else {
@@ -550,6 +558,7 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
     int errcode = 0;
     const struct timespec *ts;
     bool interval = false;
+    bool cleaning = false;
 
     /* Sanitize first. old_value is allowed to be NULL */
     if (new_value == NULL) {
@@ -562,24 +571,28 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
     ts = &new_value->it_value;
     if (new_value->it_value.tv_sec == 0 && new_value->it_value.tv_nsec == 0) {
         /* simply clean previously set timer */
-        errcode = timer_setnode(timerid, &new_value->it_value, false, &new_value->it_interval, old_value);
-        goto err;
+        cleaning = true;
     }
-    if (new_value->it_interval.tv_sec != 0 || new_value->it_interval.tv_nsec != 0) {
+    /* if both interval and value are non-null, this is a periodic timer */
+    if ((new_value->it_interval.tv_sec != 0 || new_value->it_interval.tv_nsec != 0) &&
+        (new_value->it_value.tv_sec != 0 || new_value->it_value.tv_nsec != 0)) {
         /* an periodic interval is requested after first trigger (set by it_value)*/
         interval = true;
     }
-    /* be sure that new_value ts is large enough */
-    if (ts->tv_sec == 0 && ts->tv_nsec == 0) {
-        errcode = -1;
-        __libstd_set_errno(EINVAL);
-        goto err;
-    }
-    if (ts->tv_sec == 0 && ts->tv_nsec < 1000000) {
-        /* to short timer */
-        errcode = -1;
-        __libstd_set_errno(EINVAL);
-        goto err;
+    /* when not unsetting a timer, timer specs must be large enough */
+    if (cleaning == false) {
+        if (ts->tv_sec == 0 && ts->tv_nsec < 1000000) {
+            /* too short timer step */
+            errcode = -1;
+            __libstd_set_errno(EINVAL);
+            goto err;
+        }
+        if (interval == true && new_value->it_interval.tv_sec == 0 && new_value->it_interval.tv_nsec < 1000000) {
+            /* too short interval */
+            errcode = -1;
+            __libstd_set_errno(EINVAL);
+            goto err;
+        }
     }
 
     if (get_current_ctx_id() == CTX_ISR) {
@@ -593,7 +606,6 @@ int timer_settime(timer_t timerid, int flags __attribute__((unused)), const stru
     } else {
         mutex_lock(&timer_mutex);
     }
-
 
     errcode = timer_setnode(timerid, &new_value->it_value, interval, &new_value->it_interval, old_value);
 
