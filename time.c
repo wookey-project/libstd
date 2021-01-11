@@ -2,6 +2,7 @@
 #include "libc/signal.h"
 #include "libc/time.h"
 #include "libc/errno.h"
+#include "libc/sync.h"
 #include "libc/list.h"
 #include "libc/nostd.h"
 #include "libc/stdio.h"
@@ -19,7 +20,7 @@
 /*
  * 5 timers max per task. By now EwoK only handle one timer at a time... :-/
  */
-#define STD_POSIX_TIMER_MAXNUM 1
+#define STD_POSIX_TIMER_MAXNUM 10
 
 uint32_t timer_mutex = 1;
 
@@ -169,8 +170,6 @@ int timer_setnode(timer_t id, const struct timespec *ts, bool interval, const st
 
     if (period_ms == 0) {
         /* unsetting a previously alread not set timer has no meaning... */
-        errcode = -1;
-        __libstd_set_errno(EINVAL);
         goto err;
     }
 
@@ -309,19 +308,19 @@ timer_set:
 call_alarm:
     /* call sigalarm() */
     switch (sys_alarm(period_ms, timer_handler)) {
+        case SYS_E_DONE:
+            goto err;
         case SYS_E_DENIED:
             /* TODO: remove node */
             errcode = -1;
             __libstd_set_errno(EPERM);
             goto err;
             break;
-        case SYS_E_BUSY:
+        default:
             /* TODO: remove node */
             errcode = -1;
             __libstd_set_errno(EAGAIN);
             goto err;
-            break;
-        default:
             break;
     }
 
@@ -341,7 +340,7 @@ void timer_handler(uint32_t ms)
 
     if (mutex_trylock(&timer_mutex) == false) {
         /* didn't manage to get mutex lock without blocking (another thread is blocking it ?) */
-        dangling_timers++;
+        set_u8_with_membarrier(&dangling_timers, dangling_timers + 1);
         goto err_nolock;
     }
 
@@ -364,7 +363,7 @@ void timer_handler(uint32_t ms)
         for (uint8_t i = 0; i < dangling_timers; ++i) {
             errcode = list_remove(&timer_list, (void**)&info, timer_list.head->key);
             wfree((void**)&info);
-            dangling_timers--;
+            set_u8_with_membarrier(&dangling_timers, dangling_timers - 1);
         }
         /*@ assert dangling_timers == 0; */
         /* All dangling removed */
@@ -400,19 +399,44 @@ void timer_handler(uint32_t ms)
             break;
     }
 
+    struct sigevent sevp = { 0 };
+    sevp.sigev_notify_function = info->sigev_notify_function;
+    sevp.sigev_notify = info->sigev_notify;
+    sevp.sigev_value = info->sigev_value;
+
     if (info->postponed == true) {
+
         /* the current timer node has been postponed. Another timer node exists (or has existed)
          * and has been/will be executed in order to execute the associated callback. By now,
          * just do nothing. */
+
+        struct list_node *next_node = node;
+        bool not_the_last = false;
+
+        /* is there other future timers (postponed or not) for the same timer id ? */
+        while (next_node && next_node->next) {
+            next_node = next_node->next;
+            if (((timer_infos_t*)(next_node->data))->id == info->id) {
+                /* future timers with the same timer id will trig */
+                not_the_last = true;
+            }
+        }
+        if (not_the_last == false) {
+            /* current postponed timer is the last one for this id, no more timer trigger. We push back the
+             * timer id to the inactive timer list */
+            if ((ret = timer_create_node(&sevp, info->id, false)) == -1) {
+#if TIME_DEBUG
+                printf("[handler] failed to rearm timer (creation)\n");
+#endif
+                wfree((void**)&info);
+                goto err;
+            }
+        }
     } else {
         if (info->sigev_notify == SIGEV_THREAD) {
             /* upper thread execution is requested. The callback **must** be set as it has been checked
              * at creation time. */
             info->sigev_notify_function(info->sigev_value);
-            struct sigevent sevp = { 0 };
-            sevp.sigev_notify_function = info->sigev_notify_function;
-            sevp.sigev_notify = info->sigev_notify;
-            sevp.sigev_value = info->sigev_value;
 
             if (info->periodic == true) {
                 /* reinsert a new timer, by creating a new one with the same key.... */
@@ -425,17 +449,25 @@ void timer_handler(uint32_t ms)
 #if TIME_DEBUG
                     printf("[handler] failed to rearm timer (creation)\n");
 #endif
+                    wfree((void**)&info);
                     goto err;
                 }
                 if ((ret = timer_setnode(info->id, &ts, true, &info->period, NULL)) == -1) {
 #if TIME_DEBUG
                     printf("[handler] failed to rearm timer (set)\n");
 #endif
+                    wfree((void**)&info);
                     goto err;
                 }
             } else {
                 /* not periodic, keep the timerid as created but not set for future timer_settime()  */
-                errcode = timer_create_node(&sevp, info->id, false);
+                if ((ret = timer_create_node(&sevp, info->id, false)) == -1) {
+#if TIME_DEBUG
+                    printf("[handler] failed to keep timer id (creation)\n");
+#endif
+                    wfree((void**)&info);
+                    goto err;
+                }
             }
         }
     }
