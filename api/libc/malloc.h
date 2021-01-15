@@ -43,6 +43,29 @@
 int wmalloc_init(void);
 
 #if CONFIG_STD_MALLOC_SIZE_LEN == 16
+/*@
+
+  @ behavior bad_input_ptr:
+  @   assumes !\valid(ptr_to_alloc);
+  @   assigns \nothing;
+  @   ensures \result == -1;
+
+  @ behavior bad_input_sz:
+  @   assumes \valid(ptr_to_alloc);
+  @   assumes len == 0;
+  @   assigns \nothing;
+  @   ensures \result == -1;
+
+  @ behavior ok:
+  @   assumes \valid(ptr_to_alloc);
+  @   assumes len != 0;
+  @   assigns *ptr_to_alloc;
+  @   ensures \valid(((uint8_t*)(*ptr_to_alloc))+(0..len));
+  @   ensures \result == 0;
+
+  @ disjoint behaviors;
+  @ complete behaviors;
+  */
 int wmalloc(void **ptr_to_alloc, const uint16_t len, const int flag);
 #elif CONFIG_STD_MALLOC_SIZE_LEN == 32
 int wmalloc(void **ptr_to_alloc, const uint32_t len, const int flag);
