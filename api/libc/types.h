@@ -39,6 +39,13 @@ typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 # define __ASM            __asm  /* asm keyword for ARM Compiler    */
 # define __INLINE         static __inline    /* inline keyword for ARM Compiler */
 # define __UNUSED                /* [PTH] todo: find the way to set a function/var unused */
+
+/* support for compilers that don't support expect builtin */
+# define linely(x)  x
+# define unlikey(x) x
+# define likely_value(x,val) x
+
+
 #elif defined(__GNUC__)
 # define __ASM            __asm  /* asm keyword for GNU Compiler    */
 # define __INLINE        static inline
