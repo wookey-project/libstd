@@ -61,7 +61,7 @@ typedef struct queue {
     (\at(node,L2) == NULL && \at(node, L1) == NULL) ? \true :
        (\at(node,L2) == NULL && \at(node, L1) != NULL) ? \false :
           (\at(node,L2) != NULL && \at(node, L1) == NULL) ? \false :
-             (\at(node->data,L2) == \at(node->data, L1) && \at(node->next,L2) == \at(node->next, L1)) ? \true : \false;
+             (\at(node->data,L2) == \at(node->data, L1) && \at(node->next,L2) == \at(node->next, L1)) ? (\at(node->next,L2) != NULL ? cell_hasnt_changed{L1,L2}(\at(node->next,L2)) : \true ) : \false;
 
   // logic function that check that a given queue hasn't changed at all
   logic boolean queue_hasnt_changed{L1,L2}(queue_t *q) =
