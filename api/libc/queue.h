@@ -86,6 +86,7 @@ typedef struct queue {
  * \return MBED_ERROR_NONE if everything is ok. another error code in other case (see types.h)
  */
 /*@
+  @ assigns *queue;
 
   @ behavior bad_input_ptr:
   @   assumes !\valid(queue);
@@ -125,6 +126,7 @@ mbed_error_t queue_create(uint32_t capacity, queue_t **queue);
  */
 /*@
   @ requires \separated(q,((uint8_t*)data));
+  @ assigns *q;
 
   @ behavior bad_input_queue:
   @   assumes !\valid(q);
@@ -199,6 +201,8 @@ mbed_error_t queue_next_element(queue_t *q, void **next);
 
 /*@
   @ requires \separated(q, data, ((uint8_t*)*data));
+  @   assigns *q;
+  @   assigns *data;
 
   @ behavior bad_input_queue:
   @   assumes !\valid(q);
@@ -232,8 +236,6 @@ mbed_error_t queue_next_element(queue_t *q, void **next);
   @   assumes \valid(data);
   @   assumes q->lock > 0;
   @   assumes q->size > 0;
-  @   assigns *q;
-  @   assigns *data;
   @   ensures \result == MBED_ERROR_NONE ==> (
          \valid(((uint8_t*)(*data))+(0 .. 10))      &&
          ((uint8_t*)(*data)) == \old((uint8_t*)(q->tail->data)) &&

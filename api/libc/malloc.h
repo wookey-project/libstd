@@ -44,6 +44,7 @@ int wmalloc_init(void);
 
 #if CONFIG_STD_MALLOC_SIZE_LEN == 16
 /*@
+  @ assigns *ptr_to_alloc;
 
   @ behavior bad_input_ptr:
   @   assumes !\valid(ptr_to_alloc);
@@ -59,7 +60,6 @@ int wmalloc_init(void);
   @ behavior ok:
   @   assumes \valid(ptr_to_alloc);
   @   assumes len != 0;
-  @   assigns *ptr_to_alloc;
   @   ensures \valid(((uint8_t*)(*ptr_to_alloc))+(0..len));
   @   ensures \result == 0;
 
