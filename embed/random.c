@@ -143,21 +143,54 @@ err:
 }
 #endif
 
+
+#if __GNUC__
+#pragma GCC push_options
+#pragma GCC optimize("-fno-stack-protector")
+#endif
+
+#if __clang__
+#pragma clang optimize off
+  /* Well, clang support local stack protection deactivation only since v8 :-/ */
+#if __clang_major__ > 7
+#pragma clang attribute push(__attribute__((no_stack_protector)), apply_to = do_starttask)
+#endif
+#endif
+
+volatile uint32_t random_secure = SEC_RANDOM_SECURE;
+
 mbed_error_t get_random(unsigned char *buf, uint16_t len)
 #ifdef CONFIG_STD_DRBG
 {
         mbed_error_t err = MBED_ERROR_NONE;
-	if(drbg_init_done == false){
-		if(drbg_init()){
-			err = MBED_ERROR_UNKNOWN;
-			goto error;
-		}
-		drbg_init_done = true;
-	}
-	if(drbg_get_random(buf, len)){
-		err = MBED_ERROR_UNKNOWN;
-		goto error;
-	}
+        if(random_secure == SEC_RANDOM_SECURE){
+            if(random_secure != SEC_RANDOM_SECURE){
+                    err = MBED_ERROR_UNKNOWN;
+                    goto error;
+            }
+  	    if(drbg_init_done == false){
+	  	    if(drbg_init()){
+			    err = MBED_ERROR_UNKNOWN;
+  			    goto error;
+  		    }
+  		    drbg_init_done = true;
+ 	    }
+  	    if(drbg_get_random(buf, len)){
+	  	    err = MBED_ERROR_UNKNOWN;
+  		    goto error;
+	    }
+       } else if(random_secure == SEC_RANDOM_NONSECURE){
+            if(random_secure != SEC_RANDOM_NONSECURE){
+                    err = MBED_ERROR_UNKNOWN;
+                    goto error;
+            }
+  	    if((err = get_entropy(buf, len)) != MBED_ERROR_NONE){
+		    goto error;
+	    }
+       }
+       else{
+           err = MBED_ERROR_UNKNOWN;
+       }
  error:
 	return err;
 }
@@ -172,4 +205,15 @@ mbed_error_t get_random(unsigned char *buf, uint16_t len)
  error:
  	return err;
 }
+#endif
+
+#if __clang__
+#pragma clang optimize on
+#if __clang_major__ > 7
+#pragma clang attribute pop
+#endif
+#endif
+
+#if __GNUC__
+#pragma GCC pop_options
 #endif

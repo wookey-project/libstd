@@ -57,4 +57,8 @@ void srand(unsigned int seed);
  */
 mbed_error_t  get_random(unsigned char *buf, uint16_t len);
 
+#define SEC_RANDOM_SECURE	0xaa55aa55
+#define SEC_RANDOM_NONSECURE	0x55aa55aa
+extern volatile uint32_t random_secure;
+
 #endif
