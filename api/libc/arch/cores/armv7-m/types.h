@@ -9,7 +9,9 @@ typedef signed int int32_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
-typedef unsigned long long int uint64_t;
+/* uint64_t is required to by aligned on 8 bytes to avoid compiler optimizations which may
+ * use store/load double opcodes which requires 8 bytes aligned data */
+__extension__ typedef unsigned long long int uint64_t __attribute__ ((aligned (8)));
 /* fully typed log buffer size */
 typedef uint8_t logsize_t;
 /* POSIX compliant typing for time_t type */

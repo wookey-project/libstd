@@ -21,44 +21,45 @@
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-#ifndef RANDOM_H_
-#define RANDOM_H_
+#ifndef SIGNAL_H_
+#define SIGNAL_H_
 
 #include "autoconf.h"
 #include "libc/types.h"
 
-
-#if CONFIG_STD_POSIX_RAND
-#define RAND_MAX 32767
-
-/* ISOC functions for random. These provide *NON SECURE* random,
- * that can be OK for non critical applications.
- */
-int rand(void);
-
-int rand_r(unsigned int *seedp);
-
-void srand(unsigned int seed);
-
+/* Future for multithreads compatible sigev structure */
+#define __SIGEV_MAX_SIZE	64
+#if __WORDSIZE == 64
+# define __SIGEV_PAD_SIZE	((__SIGEV_MAX_SIZE / sizeof (int)) - 4)
+#else
+# define __SIGEV_PAD_SIZE	((__SIGEV_MAX_SIZE / sizeof (int)) - 3)
 #endif
 
-/**
- * \fn get_random
- * \brief load random content from the system entropy source into a buffer
- *
- * \param buf  the buffer in which the random values is to be stored
- * \param len  the amount of random bytes requested
- *
- * \return MBED_ERROR_NONE if the RNG source fullfill the buffer, or:
- *    MBED_ERROR_DENIED if the task is not authorized to request RNG source
- *    MBED_ERROR_BUSY if the RNG source entropy is not ready
- *    MBED_ERROR_INVPARAM if len is not 32bit aligned or the buffer is NULL.
- *
+enum
+{
+  SIGEV_SIGNAL = 0,		/* Notify via POSIX signal, not supported by libstd (no signal in EwoK */
+  SIGEV_NONE,			/* Pure userspace handling, timer polling only */
+  SIGEV_THREAD 			/* execute given handler at timer terminaison */
+};
+
+union sigval
+{
+  int sival_int;
+  void *sival_ptr;
+};
+typedef union sigval __sigval_t;
+
+typedef void (*sigev_notify_function_t)(__sigval_t sig);
+
+/*
+ * Simplified, yet POSIX sigevent_t. No support for pid_t
  */
-mbed_error_t  get_random(unsigned char *buf, uint16_t len);
+typedef struct sigevent {
+    sigev_notify_function_t sigev_notify_function;
+    __sigval_t sigev_value;
+    int sigev_signo;
+    int sigev_notify;
+} sigevent_t;
 
-#define SEC_RANDOM_SECURE	0xaa55aa55
-#define SEC_RANDOM_NONSECURE	0x55aa55aa
-extern volatile uint32_t random_secure;
 
-#endif
+#endif/*!SIGNAL_H_*/

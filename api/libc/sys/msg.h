@@ -37,7 +37,7 @@
 #include "autoconf.h"
 #include "libc/sys/types.h"
 
-#ifdef CONFIG_STD_SYSV_MSQ
+#ifdef CONFIG_STD_POSIX_SYSV_MSQ
 
 /* messaging mode */
 #define MSG_NOERROR    010000 /* truncate silently message if too long */

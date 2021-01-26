@@ -45,7 +45,7 @@ typedef struct queue {
 
 #ifdef __FRAMAC__
 /*@
-  // logic function that check if data exists in the queue starting with node
+  // logic function that check if data exists in the queue (recursive)
   logic boolean data_in_cell(struct node *node, void *data) =
      node == NULL ? \false :
          node->data == data ? \true :
@@ -55,6 +55,24 @@ typedef struct queue {
   logic boolean data_in_queue(queue_t *q, void* data) =
     q->size == 0 ? \false :
       data_in_cell(q->head, data);
+
+  // logic function that check that a cell sequence haven't changed (recursive)
+  logic boolean cell_hasnt_changed{L1,L2}(struct node *node) =
+    (\at(node,L2) == NULL && \at(node, L1) == NULL) ? \true :
+       (\at(node,L2) == NULL && \at(node, L1) != NULL) ? \false :
+          (\at(node,L2) != NULL && \at(node, L1) == NULL) ? \false :
+             (\at(node->data,L2) == \at(node->data, L1) && \at(node->next,L2) == \at(node->next, L1)) ? (\at(node->next,L2) != NULL ? cell_hasnt_changed{L1,L2}(\at(node->next,L2)) : \true ) : \false;
+
+  // logic function that check that a given queue hasn't changed at all
+  logic boolean queue_hasnt_changed{L1,L2}(queue_t *q) =
+    (\at(q,L2) == NULL && \at(q, L1) == NULL) ? \true :
+       (\at(q,L2) == NULL && \at(q, L1) != NULL) ? \false :
+          (\at(q,L2) != NULL && \at(q, L1) == NULL) ? \false :
+            (\at(q->head,L2) == \at(q->head, L1) &&
+              \at(q->tail,L2) == \at(q->tail, L1) &&
+              \at(q->size,L2) == \at(q->size, L1) &&
+              \at(q->max,L2) == \at(q->max, L1)) ? (\at(q->head,L2) != NULL ? cell_hasnt_changed{L1,L2}(\at(q->head,L2)) : \true) : \false;
+
 */
 #endif
 
@@ -68,6 +86,7 @@ typedef struct queue {
  * \return MBED_ERROR_NONE if everything is ok. another error code in other case (see types.h)
  */
 /*@
+  @ assigns *queue;
 
   @ behavior bad_input_ptr:
   @   assumes !\valid(queue);
@@ -83,7 +102,12 @@ typedef struct queue {
   @ behavior ok:
   @   assumes \valid(queue);
   @   assumes capacity > 0;
-  @   ensures \result == MBED_ERROR_NONE ==> \valid(*queue);
+  @   ensures \result == MBED_ERROR_NONE ==> (
+        \valid(*queue) && (*queue)->head == NULL &&
+        (*queue)->tail == NULL                   &&
+        (*queue)->lock == 1                      &&
+        (*queue)->size == 0                      &&
+        (*queue)->max  == capacity);
   @   ensures \result != MBED_ERROR_NONE ==> !\valid(*queue);
 
   @ disjoint behaviors;
@@ -102,6 +126,7 @@ mbed_error_t queue_create(uint32_t capacity, queue_t **queue);
  */
 /*@
   @ requires \separated(q,((uint8_t*)data));
+  @ assigns *q;
 
   @ behavior bad_input_queue:
   @   assumes !\valid(q);
@@ -135,8 +160,13 @@ mbed_error_t queue_create(uint32_t capacity, queue_t **queue);
   @   assumes q->size < q->max;
   @   assumes q->lock > 0;
   @   assigns *q;
-  @   ensures \result == MBED_ERROR_NONE ==> (data_in_queue(q, data) == \true && q->size == \old(q->size)+1);
-  @   ensures \result != MBED_ERROR_NONE ==>  (data_in_queue(q, data) == \false && q->size == \old(q->size));
+  @   ensures \result == MBED_ERROR_NONE ==> (
+      data_in_queue(q, data) == \true &&
+      \valid(q->tail)                 &&
+      \valid(q->head)                 &&
+      q->tail->data == data           &&
+      q->size == \old(q->size)+1);
+  @   ensures \result != MBED_ERROR_NONE ==> queue_hasnt_changed{Pre,Post}(q) == \true;
 
   @ disjoint behaviors;
   @ complete behaviors;
@@ -171,6 +201,8 @@ mbed_error_t queue_next_element(queue_t *q, void **next);
 
 /*@
   @ requires \separated(q, data, ((uint8_t*)*data));
+  @   assigns *q;
+  @   assigns *data;
 
   @ behavior bad_input_queue:
   @   assumes !\valid(q);
@@ -204,11 +236,12 @@ mbed_error_t queue_next_element(queue_t *q, void **next);
   @   assumes \valid(data);
   @   assumes q->lock > 0;
   @   assumes q->size > 0;
-  @   assigns *q;
-  @   assigns *data;
-  @   ensures \result == MBED_ERROR_NONE ==> (\valid(((uint8_t*)(*data))+(0 .. 10)) &&
-                                               q->size == \old(q->size)-1);
-  @   ensures \result != MBED_ERROR_NONE ==>  (*data == NULL && q->size == \old(q->size));
+  @   ensures \result == MBED_ERROR_NONE ==> (
+         \valid(((uint8_t*)(*data))+(0 .. 10))      &&
+         ((uint8_t*)(*data)) == \old((uint8_t*)(q->tail->data)) &&
+         q->tail == \old(q->tail->prev) &&
+         q->size == \old(q->size)-1);
+  @   ensures \result != MBED_ERROR_NONE ==> (*data == NULL && queue_hasnt_changed{Pre,Post}(q) == \true);
 
   @ disjoint behaviors;
   @ complete behaviors;

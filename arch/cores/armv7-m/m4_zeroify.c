@@ -7,8 +7,11 @@
  * Let's define services zeroficication prototypes
  */
 
-#if CONFIG_STD_SYSV_MSQ
+#if CONFIG_STD_POSIX_SYSV_MSQ
 void msg_zeroify(void);
+#endif
+#if CONFIG_STD_POSIX_TIMER
+void timer_initialize(void);
 #endif
 void init_ring_buffer(void);
 
@@ -17,7 +20,10 @@ void init_ring_buffer(void);
  */
 void zeroify_libc_globals(void) {
     init_ring_buffer();
-#if CONFIG_STD_SYSV_MSQ
+#ifdef CONFIG_STD_POSIX_SYSV_MSQ
     msg_zeroify();
+#endif
+#if CONFIG_STD_POSIX_TIMER
+    timer_initialize();
 #endif
 }
