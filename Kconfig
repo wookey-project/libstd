@@ -113,20 +113,20 @@ config STD_MALLOC_SIZE_LEN
    range 16 32
    default 16
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_ALIGN
    int "sizes alignment (in bytes)"
    range 1 64
    default 1
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_MUTEX
-   bool "allocator with mutex"
-   default y
+   bool "allocator with mutex (EXPERIMENTAL)"
+   default n
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_CHECK_IF_NULL
    int "ptr must be null for allocation"
@@ -134,7 +134,7 @@ config STD_MALLOC_CHECK_IF_NULL
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
    default 0
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_DBLE_WAY_SEARCH # A conserver ?
    int "allocator search mode optimization"
@@ -142,7 +142,7 @@ config STD_MALLOC_DBLE_WAY_SEARCH # A conserver ?
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
    default 0
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_FREEMEM_CHECK # A conserver ?
   int "allocator free memory checking"
@@ -150,7 +150,7 @@ config STD_MALLOC_FREEMEM_CHECK # A conserver ?
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
   default 0
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_BASIC_CHECKS
    int "allocator basic integrity check"
@@ -158,14 +158,14 @@ config STD_MALLOC_BASIC_CHECKS
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
    default 0
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_NB_CANARIES
    int
    depends on STD_MALLOC_BINS
    default 2
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_INTEGRITY
    int "allocator self integrity check"
@@ -173,7 +173,7 @@ config STD_MALLOC_INTEGRITY
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
    default 1
    ---help---
-      TODO: Christophe
+      TODO
 
 config STD_MALLOC_RANDOM
    int "random allocation"
@@ -181,7 +181,7 @@ config STD_MALLOC_RANDOM
    depends on STD_MALLOC_STD || STD_MALLOC_BINS
    default 0
    ---help---
-      TODO: Christophe
+      TODO
 
 endif
 
