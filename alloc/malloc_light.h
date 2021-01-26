@@ -1,5 +1,5 @@
 /* Author: Christophe GUNST (christop.gh@gmail.com)
- * 
+ *
  * (implementation of an allocator for the WooKey project)
  */
 
@@ -25,17 +25,19 @@
  */
 /*#pragma pack (1)*/
 struct __attribute__((packed)) block {
-    u_flg_t flag;
-    u__sz_t prv_sz;
-    u__sz_t sz;
-    u_off_t prv_free;  /* Only for free blocks: relative address */
-    u_off_t nxt_free;  /* Only for free blocks: relative address */
+    u_flg_t flag;     /* 2 bytes */
+    u__sz_t prv_sz;   /* 2 bytes */
+    u__sz_t sz;       /* 2 bytes */
+    u__sz_t align;    /* 2 bytes */
+    u_off_t prv_free; /* 4 bytes */  /* Only for free blocks: relative address */
+    u_off_t nxt_free; /* 4 bytes */  /* Only for free blocks: relative address */
 };
 
 struct __attribute__((packed)) alloc_block {
-    u_flg_t flag;
-    u__sz_t prv_sz;
-    u__sz_t sz;
+    u_flg_t flag;     /* 2 bytes */
+    u__sz_t prv_sz;   /* 2 bytes */
+    u__sz_t sz;       /* 2 bytes */
+    uint16_t padding; /* pad on 8 bytes */
 };
 
 
@@ -58,7 +60,7 @@ struct __attribute__((packed)) alloc_block {
 
 #define MAKE_ALLOC(b)       ((struct block *)(b))->flag |= MASK_ALLOC
 #define MAKE_FREE(b)        ((struct block *)(b))->flag &= MASK_FREE
-  
+
 #define MASK_SENSITIVE      ((u_flg_t) 0xFEFE)
 #define MASK_NORMAL         ((u_flg_t) 0x0101)
 
@@ -72,7 +74,7 @@ struct __attribute__((packed)) alloc_block {
                               (((b)->flag & MASK_ALLOC) != 0)) || \
                              ((((b)->flag & MASK_SENSITIVE) != MASK_SENSITIVE) && \
                               (((b)->flag & MASK_SENSITIVE) != 0)))
-  
+
 #define SIZE(b)             ((b)->sz)
 #define PRV_SIZE(b)         ((b)->prv_sz)
 
@@ -84,7 +86,7 @@ struct __attribute__((packed)) alloc_block {
 
 #define FIRST_BLOCK(b)      ((physaddr_t)(b) == (physaddr_t) (_start_heap + HDR_FREE_SZ))
 #define NOT_FIRST_BLOCK(b)  ((physaddr_t)(b) != (physaddr_t) (_start_heap + HDR_FREE_SZ))
-  
+
 #define LAST_BLOCK(b)       ((physaddr_t)(b) + SIZE(b) == _end_heap)
 #define NOT_LAST_BLOCK(b)   ((physaddr_t)(b) + SIZE(b) != _end_heap)
 

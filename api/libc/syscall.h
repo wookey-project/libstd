@@ -263,6 +263,8 @@ e_syscall_ret sys_ipc_IPC_RECV_ASYNC(uint32_t ipctype, uint8_t *sender, logsize_
 */
 e_syscall_ret sys_log (logsize_t size, const char *msg);
 
+typedef void (*alarm_handler_t)(uint32_t ms);
+
 /*@
     @ assigns \result \from time, handler;
     @ ensures \result == SYS_E_DONE  ||
@@ -271,7 +273,13 @@ e_syscall_ret sys_log (logsize_t size, const char *msg);
             \result == SYS_E_BUSY ||
             \result == SYS_E_MAX ;
 */
-e_syscall_ret sys_alarm(uint32_t time, char* handler);
+/*
+ * Execute the given handler in 'time' milisecond from now. This is a basic
+ * substitution to timers for long enough duration (more than systick time), as
+ * timer are dangerous.
+ * This syscall doesn't deschedule the task (as sys_sleep does).
+ */
+e_syscall_ret sys_alarm(uint32_t time, alarm_handler_t handler);
 
 /**
  * \}
