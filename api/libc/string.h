@@ -64,6 +64,26 @@ const char *strerror(uint8_t ret);
  * Conforming to:
  * POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.
  */
+
+/*@
+  axiomatic string_len {
+    logic integer strlen(char * s) reads s[0 .. ] ;
+
+    axiom pos_or_nul{L}:
+      \forall char* s, integer i ;
+        (0 <= i && (\forall integer j ; 0 <= j < i ==> s[j] != '\0') && s[i] == '\0') ==>
+      strlen(s) == i ;
+    axiom no_end{L}:
+      \forall char* s ;
+        (\forall integer i ; 0 <= i ==> s[i] != '\0') ==> strlen(s) < 0 ;
+  }
+*/
+
+/*@
+  @ assigns \nothing;
+  @ ensures s == NULL ==> \result == 0;
+  @ ensures s != NULL ==> \result == strlen(\old(s));
+ */
 uint32_t  strlen(const char * s);
 
 /*
