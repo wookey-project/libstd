@@ -1,4 +1,3 @@
-#include "hmac.h"
 #include "hmac_drbg.h"
 #include "libc/string.h"
 
