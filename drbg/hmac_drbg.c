@@ -1,4 +1,5 @@
 #include "hmac_drbg.h"
+#include "libc/string.h"
 
 #ifdef CONFIG_STD_DRBG
 
@@ -24,7 +25,7 @@ static int hmac(hmac_context *hmac_ctx, const unsigned char *key, uint32_t key_l
 	}
 
 	if(key != NULL){
-		/* If the key is not NULL, initialize */	
+		/* If the key is not NULL, initialize */
 		/* Initialize our internal HMAC context with Key K */
 		if(hmac_init(hmac_ctx, key, key_len, hash_type)){
 			goto err;
@@ -319,15 +320,15 @@ hmac_drbg_error hmac_drbg_instantiate(hmac_drbg_ctx *ctx, const unsigned char *d
 	}
 
 	/* Initialize K with 0x000 ... 00 */
-	local_memset(ctx->K, 0x00, ctx->digest_size);
+	memset(ctx->K, 0x00, ctx->digest_size);
 	/* Initialize V with 0x0101  ... 01 */
-	local_memset(ctx->V, 0x01, ctx->digest_size);
+	memset(ctx->V, 0x01, ctx->digest_size);
 	/* Initialize reseed counter with 1 */
 	ctx->reseed_counter = 1;
 	/* Initialize need reseed */
 	ctx->need_reseed = 1;
 
-	/* (K, V) = update(seed_material, K, V)) 
+	/* (K, V) = update(seed_material, K, V))
 	 * with seed_material = data | nonce | addin
 	 */
 	sc[0].data = data;
@@ -355,8 +356,8 @@ hmac_drbg_error hmac_drbg_uninstantiate(hmac_drbg_ctx *ctx)
 		goto err;
 	}
 	/* Cleanup stuff inside our state */
-	local_memset(ctx->K, 0x00, sizeof(ctx->K));
-	local_memset(ctx->V, 0x00, sizeof(ctx->V));
+	memset(ctx->K, 0x00, sizeof(ctx->K));
+	memset(ctx->V, 0x00, sizeof(ctx->V));
 	ctx->reseed_counter = ctx->reseed_interval = ctx->need_reseed = 0;
 
 	return HMAC_DRBG_OK;
@@ -385,10 +386,10 @@ hmac_drbg_error hmac_drbg_reseed(hmac_drbg_ctx *ctx, const unsigned char *data, 
 
 	/* Initialize reseed counter with 1 */
 	ctx->reseed_counter = 1;
-	/* Notify that we have reseeded */	
+	/* Notify that we have reseeded */
 	ctx->need_reseed = 0;
 
-	/* (K, V) = update(seed_material, K, V)) 
+	/* (K, V) = update(seed_material, K, V))
 	 * with seed_material = data | addin
 	 */
 	sc[0].data = data;
@@ -459,7 +460,7 @@ hmac_drbg_error hmac_drbg_generate(hmac_drbg_ctx *ctx, const unsigned char *addi
 		}
 		/* Copy V in output */
 		unsigned int size_to_copy = ((out_len - generated) < ctx->digest_size) ? (out_len - generated) : ctx->digest_size;
-		local_memcpy((out + generated), ctx->V, size_to_copy);
+		memcpy((out + generated), ctx->V, size_to_copy);
 		generated += ctx->digest_size;
 	}
 
