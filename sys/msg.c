@@ -370,14 +370,8 @@ tryagain:
     /* here, free_cell should have been set at least one time, or the execution derivated to
      * handle_cached_msg. we can use free_cell as cell id for next sys_ipc() call  */
 
-    if (msgflg & MSG_NOERROR) {
-        /* we can truncate what we received */
-        rcv_size = 128;
-    } else {
-        /* or not */
-        /* recv size+mtype (size specify the mtext len) */
-        rcv_size = msgsz + sizeof(long);
-    }
+    /* by default, we are able to get back upto struct msgbuf content size in cache */
+    rcv_size = sizeof(struct msgbuf);
 
     /* get back message content from kernel */
     if (msgflg & IPC_NOWAIT) {
