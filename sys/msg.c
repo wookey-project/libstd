@@ -302,7 +302,7 @@ ssize_t msgrcv(int msqid,
                long msgtyp,
                int msgflg)
 {
-    int errcode = -1;
+    ssize_t errcode = -1;
     uint8_t ret;
     uint8_t tid = qmsg_vector[msqid].id;
     logsize_t rcv_size;
@@ -444,9 +444,8 @@ tryagain:
         errcode = -1;
         __libstd_set_errno(EAGAIN);
         goto err;
-    } else {
-        goto tryagain;
     }
+    goto tryagain;
 
     /* default on success */
 err:
@@ -458,7 +457,8 @@ handle_cached_msg:
     memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtext.u8[0]), rcv_size);
     qmsg_vector[msqid].msgbuf_ent--;
     qmsg_vector[msqid].msgbuf_v[i].set = false;
-    return rcv_size;
+    errcode = rcv_size;
+    return errcode;
 }
 
 #endif

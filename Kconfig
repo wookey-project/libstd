@@ -13,6 +13,7 @@ menu "POSIX Compliance"
 
 config STD_POSIX_SYSV_MSQ
   bool "Support for SystemV Message queues"
+  select STD_MALLOC
   default y
   ---help---
   Support for SystemV Message queues (msgget(),msgsnd()
