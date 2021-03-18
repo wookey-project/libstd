@@ -45,6 +45,14 @@ config STD_POSIX_TIMER
    Only the CLOCK_MONOLITIC clockid is supported when no RTC exists.
    Only SIGEV_THREAD notify mode is supported by now.
 
+config STD_POSIX_USLEEP_INT_AS_SIGNAL
+   bool "uSleep can be interrupted by ISR handlers"
+   default n
+   ---help---
+   For usleep() API, consider ISR like signals, interrupting usleep() calls,
+   returning EINTR in errno when an ISR generates a thread awakening.
+
+
 endmenu
 
 config STD_DRBG
