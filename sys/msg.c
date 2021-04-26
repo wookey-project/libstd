@@ -336,8 +336,17 @@ tryagain:
     /* check local previously stored messages */
     for (i = 0; i < CONFIG_STD_POSIX_SYSV_MSQ_DEPTH; ++i) {
         if (qmsg_vector[msqid].msgbuf_v[i].set == true) {
+            /* msgtyp == 0, the first read message is transmitted */
+            if (msgtyp == 0) {
+                if (qmsg_vector[msqid].msgbuf_v[i].msg_size > msgsz && !(msgflg & MSG_NOERROR)) {
+                    /* truncate not allowed!*/
+                    errcode = -1;
+                    __libstd_set_errno(E2BIG);
+                    goto err;
+                }
+                goto handle_cached_msg;
             /* no EXCEPT mode, try to match msgtyp */
-            if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
+            } else if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
                 /* found a waiting msg for except mode */
                 if (qmsg_vector[msqid].msgbuf_v[i].msg_size > msgsz && !(msgflg & MSG_NOERROR)) {
                     /* truncate not allowed!*/
