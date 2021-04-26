@@ -454,7 +454,7 @@ err:
     /* handle found cached message or just received message */
 handle_cached_msg:
     rcv_size = (msgsz < qmsg_vector[msqid].msgbuf_v[i].msg_size) ? msgsz : qmsg_vector[msqid].msgbuf_v[i].msg_size;
-    memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtext.u8[0]), rcv_size);
+    memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf), rcv_size + sizeof(long));
     qmsg_vector[msqid].msgbuf_ent--;
     qmsg_vector[msqid].msgbuf_v[i].set = false;
     errcode = rcv_size;
