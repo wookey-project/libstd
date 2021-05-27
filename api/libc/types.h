@@ -86,6 +86,7 @@ typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 #define __explicit_fallthrough
 #endif
 
+
 /*
  * This enumerate defines a list of usual errors that arrise in embedded systems, that can
  * be used in all drivers, stacks, libs and application as a unified error handling mechanism
@@ -112,5 +113,29 @@ typedef enum {
     MBED_ERROR_NOTFOUND,
     MBED_ERROR_INTR,
 } mbed_error_t;
+
+#ifdef __FRAMAC__
+/*@ predicate is_valid_error(mbed_error_t i) =
+    i == MBED_ERROR_NONE ||
+    i == MBED_ERROR_NOMEM ||
+    i == MBED_ERROR_NOSTORAGE ||
+    i == MBED_ERROR_NOBACKEND ||
+    i == MBED_ERROR_INVCREDENCIALS ||
+    i == MBED_ERROR_UNSUPORTED_CMD ||
+    i == MBED_ERROR_INVSTATE ||
+    i == MBED_ERROR_NOTREADY ||
+    i == MBED_ERROR_BUSY ||
+    i == MBED_ERROR_DENIED ||
+    i == MBED_ERROR_UNKNOWN ||
+    i == MBED_ERROR_INVPARAM ||
+    i == MBED_ERROR_WRERROR ||
+    i == MBED_ERROR_RDERROR ||
+    i == MBED_ERROR_INITFAIL ||
+    i == MBED_ERROR_TOOBIG ||
+    i == MBED_ERROR_NOTFOUND ||
+    i == MBED_ERROR_INTR;
+*/
+#endif
+
 
 #endif/*!TYPES_H_*/
