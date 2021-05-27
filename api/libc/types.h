@@ -41,8 +41,8 @@ typedef enum {secfalse = 0x55aa55aa, sectrue = 0xaa55aa55} secbool;
 # define __UNUSED                /* [PTH] todo: find the way to set a function/var unused */
 
 /* support for compilers that don't support expect builtin */
-# define linely(x)  x
-# define unlikey(x) x
+# define likely(x)  x
+# define unlikely(x) x
 # define likely_value(x,val) x
 
 
