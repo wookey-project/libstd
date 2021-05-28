@@ -302,7 +302,7 @@ ssize_t msgrcv(int msqid,
                long msgtyp,
                int msgflg)
 {
-    int errcode = -1;
+    ssize_t errcode = -1;
     uint8_t ret;
     uint8_t tid = qmsg_vector[msqid].id;
     logsize_t rcv_size;
@@ -336,8 +336,17 @@ tryagain:
     /* check local previously stored messages */
     for (i = 0; i < CONFIG_STD_POSIX_SYSV_MSQ_DEPTH; ++i) {
         if (qmsg_vector[msqid].msgbuf_v[i].set == true) {
+            /* msgtyp == 0, the first read message is transmitted */
+            if (msgtyp == 0) {
+                if (qmsg_vector[msqid].msgbuf_v[i].msg_size > msgsz && !(msgflg & MSG_NOERROR)) {
+                    /* truncate not allowed!*/
+                    errcode = -1;
+                    __libstd_set_errno(E2BIG);
+                    goto err;
+                }
+                goto handle_cached_msg;
             /* no EXCEPT mode, try to match msgtyp */
-            if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
+            } else if ((msgflg & MSG_EXCEPT) && (qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtype != msgtyp)) {
                 /* found a waiting msg for except mode */
                 if (qmsg_vector[msqid].msgbuf_v[i].msg_size > msgsz && !(msgflg & MSG_NOERROR)) {
                     /* truncate not allowed!*/
@@ -370,14 +379,8 @@ tryagain:
     /* here, free_cell should have been set at least one time, or the execution derivated to
      * handle_cached_msg. we can use free_cell as cell id for next sys_ipc() call  */
 
-    if (msgflg & MSG_NOERROR) {
-        /* we can truncate what we received */
-        rcv_size = 128;
-    } else {
-        /* or not */
-        /* recv size+mtype (size specify the mtext len) */
-        rcv_size = msgsz + sizeof(long);
-    }
+    /* by default, we are able to get back upto struct msgbuf content size in cache */
+    rcv_size = sizeof(struct msgbuf);
 
     /* get back message content from kernel */
     if (msgflg & IPC_NOWAIT) {
@@ -450,9 +453,8 @@ tryagain:
         errcode = -1;
         __libstd_set_errno(EAGAIN);
         goto err;
-    } else {
-        goto tryagain;
     }
+    goto tryagain;
 
     /* default on success */
 err:
@@ -461,10 +463,11 @@ err:
     /* handle found cached message or just received message */
 handle_cached_msg:
     rcv_size = (msgsz < qmsg_vector[msqid].msgbuf_v[i].msg_size) ? msgsz : qmsg_vector[msqid].msgbuf_v[i].msg_size;
-    memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf.mtext.u8[0]), rcv_size);
+    memcpy(msgp, &(qmsg_vector[msqid].msgbuf_v[i].msg.msgbuf), rcv_size + sizeof(long));
     qmsg_vector[msqid].msgbuf_ent--;
     qmsg_vector[msqid].msgbuf_v[i].set = false;
-    return rcv_size;
+    errcode = rcv_size;
+    return errcode;
 }
 
 #endif

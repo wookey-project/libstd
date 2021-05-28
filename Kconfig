@@ -13,6 +13,7 @@ menu "POSIX Compliance"
 
 config STD_POSIX_SYSV_MSQ
   bool "Support for SystemV Message queues"
+  select STD_MALLOC
   default y
   ---help---
   Support for SystemV Message queues (msgget(),msgsnd()
@@ -43,6 +44,14 @@ config STD_POSIX_TIMER
    Support for POSIX timers (timer_create(), timer_settime()) API.
    Only the CLOCK_MONOLITIC clockid is supported when no RTC exists.
    Only SIGEV_THREAD notify mode is supported by now.
+
+config STD_POSIX_USLEEP_INT_AS_SIGNAL
+   bool "uSleep can be interrupted by ISR handlers"
+   default n
+   ---help---
+   For usleep() API, consider ISR like signals, interrupting usleep() calls,
+   returning EINTR in errno when an ISR generates a thread awakening.
+
 
 endmenu
 
